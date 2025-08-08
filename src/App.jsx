@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Papa from 'papaparse';
+import EditModal from './EditModal';  // 引入 EditModal 组件
 
 const STORAGE_KEY = 'jp_vocab_v1';
 const WRONG_KEY = 'jp_vocab_wrong_v1';
@@ -15,6 +16,8 @@ export default function App() {
   const [current, setCurrent] = useState(null);
   const [answer, setAnswer] = useState('');
   const [dailyStats, setDailyStats] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [editWordData, setEditWordData] = useState(null);
   const dailyGoalRef = useRef(20);
 
   useEffect(()=>{
@@ -40,8 +43,8 @@ export default function App() {
 
   // add
   function addWord() {
-    if (!form.word.trim() || !form.reading.trim() || !form.meaning.trim()) {
-      alert('请输入单词、读音与释义');
+    if (!form.word.trim() || !form.reading.trim() ) { //|| !form.meaning.trim()
+      alert('请输入单词、读音（释义可以选填）');
       return;
     }
     setWords(prev => [...prev, { id: uid(), ...form }]);
@@ -79,20 +82,30 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  function importCSVFile(file) {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        const data = results.data
-          .filter(r => r.word && r.reading && r.meaning)
-          .map(r => ({ id: uid(), word: r.word.trim(), reading: r.reading.trim(), meaning: r.meaning.trim() }));
-        if(data.length===0) { alert('文件没有有效行 (需要 word, reading, meaning 列)'); return; }
-        setWords(prev => [...prev, ...data]);
-        alert('导入完成');
+function importCSVFile(file) {
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      const data = results.data
+        .filter(r => r.word && r.reading)  // 只检查 word 和 reading 是否存在
+        .map(r => ({
+          id: uid(),
+          word: r.word.trim(),
+          reading: r.reading.trim(),
+          meaning: r.meaning ? r.meaning.trim() : ''  // 如果缺少释义，设置为默认空字符串
+        }));
+
+      if (data.length === 0) {
+        alert('文件没有有效行 (需要 word, reading, meaning 列)');
+        return;
       }
-    });
-  }
+      setWords(prev => [...prev, ...data]);
+      alert('导入完成');
+    }
+  });
+}
+
 
   // review logic: show word only, check reading
   function startReview(onlyWrong=false) {
@@ -173,6 +186,30 @@ export default function App() {
     };
     fr.readAsText(file, 'utf-8');
   }
+  
+   // 显示编辑弹窗
+  function openEditModal(word) {
+    setEditWordData(word);
+    setIsEditing(true);
+  }
+
+  // 关闭编辑弹窗
+  function closeEditModal() {
+    setIsEditing(false);
+  }
+
+  // 保存编辑后的单词
+  function saveWordEdit(updatedWord) {
+    setWords(prev => prev.map(w => w.id === updatedWord.id ? updatedWord : w));
+    // 如果在错题本中也更新
+    setWrongBook(prev => {
+      const copy = { ...prev };
+      if (copy[updatedWord.word]) {
+        copy[updatedWord.word] = updatedWord;
+      }
+      return copy;
+    });
+  }
 
   // UI render
   const today = new Date().toISOString().slice(0,10);
@@ -232,12 +269,12 @@ export default function App() {
                       <td className="border px-2 py-1">{w.reading}</td>
                       <td className="border px-2 py-1">{w.meaning}</td>
                       <td className="border px-2 py-1">
-                        <button className="text-xs px-2 py-1 bg-yellow-100 rounded mr-1" onClick={()=>{
-                          const newWord = prompt('修改日语单词', w.word) || w.word;
-                          const newReading = prompt('修改读音', w.reading) || w.reading;
-                          const newMeaning = prompt('修改释义', w.meaning) || w.meaning;
-                          editWord(w.id, {word:newWord, reading:newReading, meaning:newMeaning});
-                        }}>编辑</button>
+                        <button
+                        className="text-xs px-2 py-1 bg-yellow-100 rounded mr-1"
+                        onClick={() => openEditModal(w)}  // 打开编辑弹窗
+                      >
+                        编辑
+                      </button>
                         <button className="text-xs px-2 py-1 bg-red-100 rounded mr-1" onClick={()=>deleteWord(w.id)}>删除</button>
                         <button className="text-xs px-2 py-1 bg-blue-100 rounded" onClick={()=> setWrongBook(prev=>({...prev, [w.word]: w}))}>加入错题</button>
                       </td>
@@ -297,6 +334,14 @@ export default function App() {
           </div>
         </div>
 
+		{/* 编辑弹窗 */}
+        {isEditing && (
+          <EditModal
+            wordData={editWordData}
+            onClose={closeEditModal}
+            onSave={saveWordEdit}
+          />
+        )}
       </div>
     </div>
   );
