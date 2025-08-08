@@ -210,6 +210,12 @@ function importCSVFile(file) {
       return copy;
     });
   }
+  // 监听回车键，提交表单
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      addWord();
+    }
+  };
 
   // UI render
   const today = new Date().toISOString().slice(0,10);
@@ -227,9 +233,12 @@ function importCSVFile(file) {
 
         {/* Form */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          <input className="border rounded p-2" placeholder="日语单词 (例: ありがとう)" value={form.word} onChange={e => setForm({...form, word: e.target.value})} />
-          <input className="border rounded p-2" placeholder="读音 (例: ありがとう)" value={form.reading} onChange={e => setForm({...form, reading: e.target.value})} />
-          <input className="border rounded p-2" placeholder="释义 (例: 谢谢)" value={form.meaning} onChange={e => setForm({...form, meaning: e.target.value})} />
+          <input className="border rounded p-2" placeholder="日语单词 (例: ありがとう)" value={form.word} onChange={e => setForm({...form, word: e.target.value})} 
+            onKeyDown={handleKeyDown} />
+          <input className="border rounded p-2" placeholder="读音 (例: ありがとう)" value={form.reading} onChange={e => setForm({...form, reading: e.target.value})} 
+            onKeyDown={handleKeyDown} />
+          <input className="border rounded p-2" placeholder="释义 (例: 谢谢)" value={form.meaning} onChange={e => setForm({...form, meaning: e.target.value})} 
+            onKeyDown={handleKeyDown} />
           <div className="flex gap-4">
             <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={addWord}>添加</button>
             <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={exportCSV}>导出 CSV</button>
