@@ -15,3 +15,6 @@ Features:
 4. npm run deploy (requires GitHub repo and gh-pages permission)
 
 Make sure to update `package.json` homepage if you want a custom GitHub Pages URL.
+
+# japanese-vocab-trainer
+Vocab learning
