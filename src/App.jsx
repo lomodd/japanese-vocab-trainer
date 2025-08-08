@@ -219,64 +219,48 @@ function importCSVFile(file) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">📘 日语单词记忆（阅读以读音复习）</h1>
+          <h1 className="text-2xl font-bold">📘 日语单词记忆</h1>
           <div className="text-sm text-gray-500">本地存储 · 离线可用</div>
         </div>
 
         {/* Form */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           <input className="border rounded p-2" placeholder="日语单词 (例: ありがとう)" value={form.word} onChange={e => setForm({...form, word: e.target.value})} />
           <input className="border rounded p-2" placeholder="读音 (例: ありがとう)" value={form.reading} onChange={e => setForm({...form, reading: e.target.value})} />
           <input className="border rounded p-2" placeholder="释义 (例: 谢谢)" value={form.meaning} onChange={e => setForm({...form, meaning: e.target.value})} />
-          <div className="flex gap-2">
-            <button className="bg-blue-600 text-white px-3 rounded" onClick={addWord}>添加</button>
-            <button className="bg-green-600 text-white px-3 rounded" onClick={exportCSV}>导出 CSV</button>
-            <button className="bg-gray-200 px-3 rounded" onClick={exportBackup}>导出 备份 (JSON)</button>
-            <input type="file" accept=".csv,.json" onChange={e => {
-              const f = e.target.files?.[0];
-              if(!f) return;
-              if (f.name.endsWith('.csv')) importCSVFile(f);
-              else importBackup(f);
-              e.target.value = '';
-            }} className="px-2 py-1 border rounded" />
+          <div className="flex gap-4">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={addWord}>添加</button>
+            <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={exportCSV}>导出 CSV</button>
+            <button className="bg-gray-200 text-black px-4 py-2 rounded" onClick={exportBackup}>导出备份 (JSON)</button>
           </div>
         </div>
 
         {/* Main */}
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Word List */}
           <div className="bg-gray-50 rounded p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold">单词列表</h2>
-              <div className="text-sm">总数：{words.length}</div>
-            </div>
+            <h2 className="font-semibold text-lg mb-4">单词列表</h2>
             <div className="overflow-auto max-h-64">
               <table className="w-full text-sm">
-                <thead className="bg-white sticky top-0">
+                <thead className="bg-gray-100">
                   <tr>
-                    <th className="border px-2 py-1">日语</th>
-                    <th className="border px-2 py-1">读音</th>
-                    <th className="border px-2 py-1">释义</th>
-                    <th className="border px-2 py-1">操作</th>
+                    <th className="px-4 py-2">日语</th>
+                    <th className="px-4 py-2">读音</th>
+                    <th className="px-4 py-2">释义</th>
+                    <th className="px-4 py-2">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {words.map((w) => (
-                    <tr key={w.id}>
-                      <td className="border px-2 py-1">{w.word}</td>
-                      <td className="border px-2 py-1">{w.reading}</td>
-                      <td className="border px-2 py-1">{w.meaning}</td>
-                      <td className="border px-2 py-1">
-                        <button
-                        className="text-xs px-2 py-1 bg-yellow-100 rounded mr-1"
-                        onClick={() => openEditModal(w)}  // 打开编辑弹窗
-                      >
-                        编辑
-                      </button>
-                        <button className="text-xs px-2 py-1 bg-red-100 rounded mr-1" onClick={()=>deleteWord(w.id)}>删除</button>
-                        <button className="text-xs px-2 py-1 bg-blue-100 rounded" onClick={()=> setWrongBook(prev=>({...prev, [w.word]: w}))}>加入错题</button>
+                  {words.map(w => (
+                    <tr key={w.id} className="border-b">
+                      <td className="px-4 py-2">{w.word}</td>
+                      <td className="px-4 py-2">{w.reading}</td>
+                      <td className="px-4 py-2">{w.meaning}</td>
+                      <td className="px-4 py-2">
+                        <button className="bg-yellow-200 text-black px-2 py-1 rounded mr-2" onClick={() => openEditModal(w)}>编辑</button>
+                        <button className="bg-red-200 text-black px-2 py-1 rounded" onClick={() => deleteWord(w.id)}>删除</button>
                       </td>
                     </tr>
                   ))}
@@ -285,56 +269,27 @@ function importCSVFile(file) {
             </div>
           </div>
 
-          {/* Review & Wrongbook */}
+          {/* Review Section */}
           <div className="bg-gray-50 rounded p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">复习（按读音检查）</h2>
-              <div className="flex gap-2">
-                <button className="bg-purple-600 text-white px-3 rounded" onClick={()=>startReview(false)}>复习全部</button>
-                <button className="bg-orange-500 text-white px-3 rounded" onClick={()=>startReview(true)}>复习错题本</button>
-              </div>
+            <h2 className="font-semibold text-lg mb-4">复习</h2>
+            <div className="flex gap-4">
+              <button className="bg-purple-600 text-white px-4 py-2 rounded" onClick={() => startReview(false)}>复习全部</button>
+              <button className="bg-orange-500 text-white px-4 py-2 rounded" onClick={() => startReview(true)}>复习错题本</button>
             </div>
 
-            <div className="mt-4 border rounded p-3">
+            <div className="border rounded p-3 mt-6">
               <div className="text-xl font-bold mb-2">{current ? current.word : '点击开始复习'}</div>
-              <div className="mb-2 text-sm text-gray-600">{current ? current.meaning : ''}</div>
-              <input className="w-full border rounded p-2 mb-2" placeholder="输入读音并回车或点击检查" value={answer} onChange={e=>setAnswer(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') checkAnswer(); }} />
-              <div className="flex gap-2">
-                <button className="bg-green-600 text-white px-3 rounded" onClick={checkAnswer}>检查</button>
-                <button className="bg-gray-300 px-3 rounded" onClick={nextReview}>下一题</button>
-                <button className="ml-auto bg-yellow-400 px-3 rounded" onClick={()=> alert(current?`正确读音：${current.reading}`:'无题目')}>显示读音</button>
+              <div className="text-sm text-gray-600 mb-2">{current ? current.meaning : ''}</div>
+              <input className="w-full border rounded p-2 mb-2" placeholder="输入读音并回车或点击检查" value={answer} onChange={e => setAnswer(e.target.value)} />
+              <div className="flex gap-4">
+                <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={checkAnswer}>检查</button>
+                <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={nextReview}>下一题</button>
               </div>
             </div>
-
-            <div className="mt-4">
-              <h3 className="font-medium">错题本</h3>
-              <ul className="list-disc pl-5 max-h-36 overflow-auto text-sm text-red-600">
-                {Object.values(wrongBook).length===0 && <li className="text-gray-400">错题本为空</li>}
-                {Object.values(wrongBook).map(w=>(
-                  <li key={w.id} className="mb-1">{w.word} ({w.reading}) - {w.meaning} <button className="text-xs text-blue-600 ml-2" onClick={()=>{ const copy={...wrongBook}; delete copy[w.word]; setWrongBook(copy); }}>移除</button></li>
-                ))}
-              </ul>
-              <div className="mt-2 flex gap-2">
-                <button className="bg-red-500 text-white px-3 rounded" onClick={()=>{ if(!confirm('确定清空错题本？')) return; setWrongBook({}); }}>清空错题本</button>
-                <button className="bg-gray-100 px-3 rounded" onClick={()=>{ // remove those wrongBook entries that exist in current words and are 'remembered'
-                  const mainSet = new Set(words.map(w=>w.word));
-                  const copy = {...wrongBook};
-                  for(const k of Object.keys(copy)) if(mainSet.has(k)) delete copy[k];
-                  setWrongBook(copy);
-                }}>移除已收录单词</button>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="font-medium">今日进度</h3>
-              <div className="w-full bg-gray-200 rounded-full h-3 my-2"><div style={{width: `${progress}%`}} className="bg-green-500 h-3 rounded-full" /></div>
-              <div className="text-sm text-gray-600">今日已复习 {todayStats.total} 题，正确 {todayStats.correct}，目标 <input className="w-16 inline border rounded px-1" defaultValue={20} onChange={e=> dailyGoalRef.current = Number(e.target.value)||20} /></div>
-            </div>
-
           </div>
         </div>
 
-		{/* 编辑弹窗 */}
+        {/* Edit Modal */}
         {isEditing && (
           <EditModal
             wordData={editWordData}
