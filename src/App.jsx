@@ -27,6 +27,7 @@ export default function App() {
   // 在 state 下面加
   const fileInputRef = useRef(null);
   const backupInputRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('words'); // Default tab is 'words'
 
 const handleCSVImportClick = () => {
   if (fileInputRef.current) fileInputRef.current.click();
@@ -65,21 +66,12 @@ const handleBackupImportClick = () => {
     localStorage.setItem(DAILY_KEY, JSON.stringify(dailyStats));
   },[dailyStats]);
 
-  // // add
-  // function addWord() {
-  //   if (!form.word.trim() || !form.reading.trim() ) { //|| !form.meaning.trim()
-  //     showAlert('请输入单词、读音（释义可以选填）');
-  //     return;
-  //   }
-  //   // setWords(prev => [...prev, { id: uid(), ...form }]);
-  //   setWords(prev => [{ id: uid(), ...form }, ...prev]);
+  
 
-  //   setForm({ word:'', reading:'', meaning:'' });
-  //       // 添加完成后聚焦到单词输入框
-  //   if (wordInputRef.current) {
-  //     wordInputRef.current.focus();
-  //   }
-  // }
+  // Switch tabs when a button is clicked
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+  };
   function addWord() {
     if (!form.word.trim() || !form.reading.trim()) {
       showAlert('请输入单词、读音（释义可以选填）');
@@ -316,19 +308,49 @@ function formatDate(dateString) {
           <div className="text-sm text-gray-500">本地存储 · 离线可用</div>
         </div>
 
-        {/* Form */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          <input ref={wordInputRef} className="border rounded p-2" placeholder="日语单词 (例: ありがとう)" value={form.word} onChange={e => setForm({...form, word: e.target.value})} 
-            onKeyDown={handleKeyDown} />
-          <input className="border rounded p-2" placeholder="读音 (例: ありがとう)" value={form.reading} onChange={e => setForm({...form, reading: e.target.value})} 
-            onKeyDown={handleKeyDown} />
-          <input className="border rounded p-2" placeholder="释义 (例: 谢谢)" value={form.meaning} onChange={e => setForm({...form, meaning: e.target.value})} 
-            onKeyDown={handleKeyDown} />
-          <div className="flex gap-4">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={addWord}>添加</button>
-            <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={exportCSV}>导出 CSV</button>
-            <button className="bg-green-200 text-black px-4 py-2 rounded" onClick={exportBackup}>导出备份 (JSON)</button>
-            <button
+{/* Form */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      {/* First Row: Word and Reading */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-600">日语单词</label>
+        <input
+          className="w-full border rounded p-2 mt-2"
+          placeholder="日语单词 (例: ありがとう)"
+          value={form.word}
+          onChange={e => setForm({ ...form, word: e.target.value })}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-600">读音</label>
+        <input
+          className="w-full border rounded p-2 mt-2"
+          placeholder="读音 (例: ありがとう)"
+          value={form.reading}
+          onChange={e => setForm({ ...form, reading: e.target.value })}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+    </div>
+
+    {/* Second Row: Meaning and Action Buttons */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-semibold text-gray-600">释义</label>
+        <input
+          className="w-full border rounded p-2 mt-2"
+          placeholder="释义 (例: 谢谢)"
+          value={form.meaning}
+          onChange={e => setForm({ ...form, meaning: e.target.value })}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+
+      <div className="flex gap-4">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onClick={addWord}>添加</button>
+        <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={exportCSV}>导出 CSV</button>
+        <button className="bg-green-200 text-black px-4 py-2 rounded hover:bg-green-300" onClick={exportBackup}>导出备份 (JSON)</button>
+     <button
               className="bg-orange-600 text-black px-4 py-2 rounded"
               onClick={handleCSVImportClick}
             >
@@ -365,12 +387,34 @@ function formatDate(dateString) {
                 }
               }}
             />
-          </div>
-        </div>
+      </div>
+    </div>
 
         {/* Main */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Word List */}
+{/* Tab Buttons */}
+<div className="flex mb-6 border-b">
+  <button
+    className={`px-4 py-2 text-sm font-semibold ${
+      activeTab === 'words' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'
+    }`}
+    onClick={() => switchTab('words')}
+  >
+    单词列表
+  </button>
+  <button
+    className={`px-4 py-2 text-sm font-semibold ${
+      activeTab === 'review' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'
+    }`}
+    onClick={() => switchTab('review')}
+  >
+    复习
+  </button>
+</div>{/* Tab Buttons end */}
+
+<div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+      {/* Tab Content */}
+      {activeTab === 'words' && (
+          //{/* Word List */}
           <div className="bg-gray-50 rounded p-4">
             <h2 className="font-semibold text-lg mb-4">
               单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）
@@ -406,8 +450,9 @@ function formatDate(dateString) {
               </table>
             </div>
           </div>
-
-          {/* Review Section */}
+      )}
+      {activeTab === 'review' && (
+          //{/* Review Section */}
           <div className="bg-gray-50 rounded p-4">
             <h2 className="font-semibold text-lg mb-4">复习</h2>
             <div className="flex gap-4">
@@ -437,8 +482,9 @@ function formatDate(dateString) {
               )}
             </div>
           </div>
-        </div>
-
+      )}
+</div>
+      
         {/* Edit Modal */}
         {isEditing && (
           <EditModal
