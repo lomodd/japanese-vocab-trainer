@@ -27,3 +27,61 @@ body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 @keyframes fadeOut {
   to { opacity: 0; }
 }
+
+.table-header {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.word-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.word-table td, .word-table th {
+  padding: 10px;
+  text-align: center;
+}
+
+.word-table td {
+  border-bottom: 1px solid #ddd;
+}
+
+.word-table th {
+  background-color: #f0f0f0;
+}
+
+.word-table .time-column {
+  width: 200px; /* Adjust this as per your layout */
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-around;
+}
+
+.button {
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.button.add {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.button.export {
+  background-color: #2196F3;
+  color: white;
+}
+
+.button.import {
+  background-color: #FF9800;
+  color: white;
+}
+
+.button.delete {
+  background-color: #f44336;
+  color: white;
+}

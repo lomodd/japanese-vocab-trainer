@@ -282,6 +282,25 @@ const handleBackupImportClick = () => {
       addWord();
     }
   };
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  
+  // Check if the date is invalid
+  if (isNaN(date.getTime())) {
+    return '';  // Return empty string if date is invalid or missing
+  }
+
+  // Return formatted date if valid
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
 
   // UI render
   const today = new Date().toISOString().slice(0,10);
@@ -356,29 +375,30 @@ const handleBackupImportClick = () => {
             <h2 className="font-semibold text-lg mb-4">
               单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）
             </h2>
-            <div className="overflow-auto max-h-64">
-              <table className="w-full text-sm">
+            {/* Word List Table */}
+            <div className="overflow-x-auto bg-white shadow-md rounded-lg">
+              <table className="min-w-full table-auto">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-4 py-2">日语</th>
-                    <th className="px-4 py-2">读音</th>
-                    <th className="px-4 py-2">释义</th>
-                    <th className="px-4 py-2">添加时间</th>
-                    <th className="px-4 py-2">最新复习时间</th>
-                    <th className="px-4 py-2">操作</th>
+                    <th className="px-4 py-2 text-left">日语</th>
+                    <th className="px-4 py-2 text-left">读音</th>
+                    <th className="px-4 py-2 text-left">释义</th>
+                    <th className="px-4 py-2 text-left">添加时间</th>
+                    <th className="px-4 py-2 text-left">最新复习时间</th>
+                    <th className="px-4 py-2 text-left">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {words.map(w => (
-                    <tr key={w.id} className="border-b">
+                    <tr key={w.id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2">{w.word}</td>
                       <td className="px-4 py-2">{w.reading}</td>
                       <td className="px-4 py-2">{w.meaning}</td>
-                      <td className="px-4 py-2">{w.addedAt}</td> {/* Display added time */}
-                      <td className="px-4 py-2">{w.lastReviewedAt}</td> {/* Display last reviewed time */}
-                      <td className="px-4 py-2">
-                        <button className="bg-yellow-200 text-black px-2 py-1 rounded mr-2" onClick={() => openEditModal(w)}>编辑</button>
-                        <button className="bg-red-200 text-black px-2 py-1 rounded" onClick={() => deleteWord(w.id)}>删除</button>
+                      <td className="px-4 py-2">{formatDate(w.addedAt)}</td>
+                      <td className="px-4 py-2">{formatDate(w.lastReviewedAt)}</td>
+                      <td className="px-4 py-2 flex gap-2">
+                        <button className="bg-yellow-200 text-black px-2 py-1 rounded hover:bg-yellow-300" onClick={() => openEditModal(w)}>编辑</button>
+                        <button className="bg-red-200 text-black px-2 py-1 rounded hover:bg-red-300" onClick={() => deleteWord(w.id)}>删除</button>
                       </td>
                     </tr>
                   ))}
