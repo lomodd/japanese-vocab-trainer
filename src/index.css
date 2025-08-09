@@ -6,7 +6,7 @@
 body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 .toast {
   position: fixed;
-  bottom: 30px;
+  top: 30px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, #ff4e50, #f9d423);
