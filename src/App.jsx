@@ -102,8 +102,14 @@ const handleBackupImportClick = () => {
       setIsModalOpen(true);
     }  else {
       // Add the new word if not already in the list
+      const newWord = {
+        id: uid(),
+        ...form,
+        addedAt: new Date().toISOString(),  // Store the current time as addedAt
+        lastReviewedAt: new Date().toISOString()  // Store the same time initially as lastReviewedAt
+      };
 
-      setWords(prev => [{ id: uid(), ...form }, ...prev]);
+      setWords(prev => [newWord, ...prev]);
       showAlert(`单词 "${form.word}" 已添加`);
     }
 
@@ -199,7 +205,7 @@ const handleBackupImportClick = () => {
         }));
 
         // Ask whether to overwrite all
-        const overwriteAllPrompt = window.confirm('是否覆盖所有现有单词？如果选择是，所有重复单词将直接更新。');
+        let overwriteAllPrompt = window.confirm('是否覆盖所有现有单词？如果选择是，所有重复单词将直接更新。');
         setOverwriteAll(overwriteAllPrompt);
 
         setImporting(true);
@@ -213,15 +219,17 @@ const handleBackupImportClick = () => {
               ));
               showAlert(`单词 "${newWord.word}" 已更新`);
             } else {
-              const confirmUpdate = window.confirm(`单词 "${newWord.word}" 已存在，是否更新？`);
-              if (confirmUpdate) {
+              const confirmUpdate = window.prompt(`单词 "${newWord.word}" 已存在，是否更新？ 直接回车更新，输入1 更新所有`);
+              if (confirmUpdate == null) {
                 // Update the existing word
                 setWords(prevWords => prevWords.map(w =>
                   w.word === newWord.word ? { ...w, ...newWord } : w
                 ));
                 showAlert(`单词 "${newWord.word}" 已更新`);
-              } else {
-                showAlert(`单词 "${newWord.word}" 没有更新`);
+              } else if (confirmUpdate == 1){
+                overwriteAllPrompt = true;
+                setOverwriteAll(true);
+                showAlert(`本次已经存在单词都将被更新`);
               }
             }
           } else {
