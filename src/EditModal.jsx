@@ -11,6 +11,13 @@ function EditModal({ wordData, onClose, onSave }) {
     onClose(); // 关闭弹窗
   };
 
+ // 监听回车键，提交表单
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
       <div className="bg-white rounded-lg p-6 w-96">
@@ -21,6 +28,7 @@ function EditModal({ wordData, onClose, onSave }) {
             className="w-full border rounded p-2"
             value={word}
             onChange={(e) => setWord(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
         <div className="mb-4">
@@ -29,6 +37,7 @@ function EditModal({ wordData, onClose, onSave }) {
             className="w-full border rounded p-2"
             value={reading}
             onChange={(e) => setReading(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
         <div className="mb-4">
@@ -37,6 +46,7 @@ function EditModal({ wordData, onClose, onSave }) {
             className="w-full border rounded p-2"
             value={meaning}
             onChange={(e) => setMeaning(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
         <div className="flex justify-end gap-2">

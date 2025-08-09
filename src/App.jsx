@@ -344,6 +344,7 @@ function importBackup(file) {
       addWord();
     }
   };
+  
 function formatDate(dateString) {
   const date = new Date(dateString);
   
