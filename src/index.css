@@ -4,3 +4,26 @@
 
 /* small custom */
 body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff4e50, #f9d423);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 16px;
+  animation: slideUp 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+  z-index: 9999;
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 50px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}

@@ -19,6 +19,30 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [editWordData, setEditWordData] = useState(null);
   const dailyGoalRef = useRef(20);
+  const [isCorrect, setIsCorrect] = useState(null);  // 用于存储校验结果
+    // 新增在 state 之后
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
+  const wordInputRef = useRef(null); // 用于聚焦单词输入框
+  // 在 state 下面加
+  const fileInputRef = useRef(null);
+  const backupInputRef = useRef(null);
+
+const handleCSVImportClick = () => {
+  if (fileInputRef.current) fileInputRef.current.click();
+};
+
+const handleBackupImportClick = () => {
+  if (backupInputRef.current) backupInputRef.current.click();
+};
+  const showAlert = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000); // 3 秒后消失
+  };
+
+  useEffect(() => {
+    return () => { if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current); };
+  }, []);
 
   useEffect(()=>{
     const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -41,18 +65,45 @@ export default function App() {
     localStorage.setItem(DAILY_KEY, JSON.stringify(dailyStats));
   },[dailyStats]);
 
-  // add
+  // // add
+  // function addWord() {
+  //   if (!form.word.trim() || !form.reading.trim() ) { //|| !form.meaning.trim()
+  //     showAlert('请输入单词、读音（释义可以选填）');
+  //     return;
+  //   }
+  //   // setWords(prev => [...prev, { id: uid(), ...form }]);
+  //   setWords(prev => [{ id: uid(), ...form }, ...prev]);
+
+  //   setForm({ word:'', reading:'', meaning:'' });
+  //       // 添加完成后聚焦到单词输入框
+  //   if (wordInputRef.current) {
+  //     wordInputRef.current.focus();
+  //   }
+  // }
   function addWord() {
-    if (!form.word.trim() || !form.reading.trim() ) { //|| !form.meaning.trim()
-      alert('请输入单词、读音（释义可以选填）');
+    if (!form.word.trim() || !form.reading.trim()) {
+      showAlert('请输入单词、读音（释义可以选填）');
       return;
     }
-    setWords(prev => [...prev, { id: uid(), ...form }]);
-    setForm({ word:'', reading:'', meaning:'' });
+
+    const newWord = {
+      id: uid(),
+      ...form,
+      addedAt: new Date().toISOString(),  // Store the current time as addedAt
+      lastReviewedAt: new Date().toISOString()  // Store the same time initially as lastReviewedAt
+    };
+
+    setWords(prev => [newWord, ...prev]);
+
+    setForm({ word: '', reading: '', meaning: '' });
+    if (wordInputRef.current) {
+      wordInputRef.current.focus();
+    }
   }
 
+
   function deleteWord(id) {
-    if (!confirm('确定删除这个单词吗？')) return;
+    //if (!confirm('确定删除这个单词吗？')) return;
     setWords(prev => prev.filter(w => w.id !== id));
     // remove from wrongBook if present
     setWrongBook(prev => { const copy = {...prev}; for(const k in copy){ if(copy[k].id===id) delete copy[k]; } return copy; });
@@ -70,7 +121,7 @@ export default function App() {
 
   // CSV Export (BOM)
   function exportCSV() {
-    if (!words || words.length===0) { alert('单词表为空'); return; }
+    if (!words || words.length===0) { showAlert('单词表为空'); return; }
     const rows = [['word','reading','meaning'], ...words.map(w => [w.word, w.reading, w.meaning])];
     const csv = rows.map(r => r.map(c => `"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
     const bom = new Uint8Array([0xEF,0xBB,0xBF]);
@@ -82,40 +133,45 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-function importCSVFile(file) {
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      const data = results.data
-        .filter(r => r.word && r.reading)  // 只检查 word 和 reading 是否存在
-        .map(r => ({
-          id: uid(),
-          word: r.word.trim(),
-          reading: r.reading.trim(),
-          meaning: r.meaning ? r.meaning.trim() : ''  // 如果缺少释义，设置为默认空字符串
-        }));
+  function importCSVFile(file) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        const data = results.data
+          .filter(r => r.word && r.reading)  // 只检查 word 和 reading 是否存在
+          .map(r => ({
+            id: uid(),
+            word: r.word.trim(),
+            reading: r.reading.trim(),
+            meaning: r.meaning ? r.meaning.trim() : ''  // 如果缺少释义，设置为默认空字符串
+          }));
 
-      if (data.length === 0) {
-        alert('文件没有有效行 (需要 word, reading, meaning 列)');
-        return;
+        if (data.length === 0) {
+          showAlert('文件没有有效行 (需要 word, reading, meaning 列)');
+          return;
+        }
+        // importCSVFile 改成这样
+        setWords(prev => [...data, ...prev]);
+        showAlert('导入完成');
       }
-      setWords(prev => [...prev, ...data]);
-      alert('导入完成');
-    }
-  });
-}
-
+    });
+  }
 
   // review logic: show word only, check reading
-  function startReview(onlyWrong=false) {
+  // 启动复习
+  const startReview = (onlyWrong = false) => {
     const pool = onlyWrong ? Object.values(wrongBook) : words;
-    if (!pool || pool.length===0) { alert(onlyWrong ? '错题本为空' : '单词表为空'); return; }
+    if (!pool || pool.length === 0) {
+      showAlert(onlyWrong ? '错题本为空' : '单词表为空');
+      return;
+    }
     setMode('review');
     setAnswer('');
-    const pick = pool[Math.floor(Math.random()*pool.length)];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
     setCurrent(pick);
-  }
+    setIsCorrect(null); // 重置校验结果
+  };
 
   function nextReview() {
     const pool = (Object.keys(wrongBook).length>0 && mode==='review' && current && wrongBook[current.word]) ? Object.values(wrongBook) : (mode==='review' ? Object.values(wrongBook) : words);
@@ -127,27 +183,32 @@ function importCSVFile(file) {
 
   function normalize(s){ return (s||'').trim().toLowerCase().replace(/[。.,!！，]/g,''); }
 
-  function checkAnswer() {
+  // 校验答案
+  const checkAnswer = () => {
     if (!current) return;
-    const user = normalize(answer);
-    const correct = normalize(current.reading);
-    if (!user) { alert('请输入读音再提交'); return; }
-    // exact or partial
-    const similarity = (correct.includes(user) || user.includes(correct));
+    const user = answer.trim().toLowerCase();
+    const correct = current.reading.trim().toLowerCase();
+    const similarity = correct.includes(user) || user.includes(correct);
+
     if (user === correct || similarity) {
-      // correct
-      alert('✅ 正确');
-      // remove from wrongBook if present
-      setWrongBook(prev => { const c = {...prev}; if (c[current.word]) delete c[current.word]; return c; });
+      setIsCorrect(true);  // Correct
+      setWrongBook(prev => {
+        const copy = { ...prev };
+        if (copy[current.word]) delete copy[current.word];
+        return copy;
+      });
       updateDaily(true);
+      // Update lastReviewedAt for the correct word
+      setWords(prev => prev.map(w =>
+        w.id === current.id ? { ...w, lastReviewedAt: new Date().toISOString() } : w
+      ));
     } else {
-      alert(`❌ 错误，正确读音：${current.reading}`);
-      // add to wrongBook
-      setWrongBook(prev => ({...prev, [current.word]: current}));
+      setIsCorrect(false);  // Incorrect
+      setWrongBook(prev => ({ ...prev, [current.word]: current }));
       updateDaily(false);
     }
-    nextReview();
-  }
+  };
+
 
   function updateDaily(correct) {
     const day = new Date().toISOString().slice(0,10);
@@ -174,20 +235,24 @@ function importCSVFile(file) {
     fr.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
+        // if (data.words && Array.isArray(data.words)) {
+        //   setWords(prev => [...prev, ...data.words.map(w=>({...w, id: uid()}))]);
+        // }
+        // importBackup 改成这样
         if (data.words && Array.isArray(data.words)) {
-          setWords(prev => [...prev, ...data.words.map(w=>({...w, id: uid()}))]);
+          setWords(prev => [...data.words.map(w=>({...w, id: uid()})), ...prev]);
         }
         if (data.wrongBook) setWrongBook(prev => ({...prev, ...data.wrongBook}));
         if (data.dailyStats) setDailyStats(prev => ({...prev, ...data.dailyStats}));
-        alert('导入备份成功');
+        showAlert('导入备份成功');
       } catch(err) {
-        alert('备份文件格式错误');
+        showAlert('备份文件格式错误');
       }
     };
     fr.readAsText(file, 'utf-8');
   }
-  
-   // 显示编辑弹窗
+
+  // 显示编辑弹窗
   function openEditModal(word) {
     setEditWordData(word);
     setIsEditing(true);
@@ -210,6 +275,7 @@ function importCSVFile(file) {
       return copy;
     });
   }
+
   // 监听回车键，提交表单
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -233,7 +299,7 @@ function importCSVFile(file) {
 
         {/* Form */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          <input className="border rounded p-2" placeholder="日语单词 (例: ありがとう)" value={form.word} onChange={e => setForm({...form, word: e.target.value})} 
+          <input ref={wordInputRef} className="border rounded p-2" placeholder="日语单词 (例: ありがとう)" value={form.word} onChange={e => setForm({...form, word: e.target.value})} 
             onKeyDown={handleKeyDown} />
           <input className="border rounded p-2" placeholder="读音 (例: ありがとう)" value={form.reading} onChange={e => setForm({...form, reading: e.target.value})} 
             onKeyDown={handleKeyDown} />
@@ -242,7 +308,44 @@ function importCSVFile(file) {
           <div className="flex gap-4">
             <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={addWord}>添加</button>
             <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={exportCSV}>导出 CSV</button>
-            <button className="bg-gray-200 text-black px-4 py-2 rounded" onClick={exportBackup}>导出备份 (JSON)</button>
+            <button className="bg-green-200 text-black px-4 py-2 rounded" onClick={exportBackup}>导出备份 (JSON)</button>
+            <button
+              className="bg-orange-600 text-black px-4 py-2 rounded"
+              onClick={handleCSVImportClick}
+            >
+              导入 CSV
+            </button>
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files.length > 0) {
+                  importCSVFile(e.target.files[0]);
+                  e.target.value = ""; // 重置
+                }
+              }}
+            />
+
+            <button
+              className="bg-orange-200 text-black px-4 py-2 rounded"
+              onClick={handleBackupImportClick}
+            >
+              导入备份 (JSON)
+            </button>
+            <input
+              type="file"
+              accept=".json"
+              ref={backupInputRef}
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files.length > 0) {
+                  importBackup(e.target.files[0]);
+                  e.target.value = ""; // 重置
+                }
+              }}
+            />
           </div>
         </div>
 
@@ -250,7 +353,9 @@ function importCSVFile(file) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Word List */}
           <div className="bg-gray-50 rounded p-4">
-            <h2 className="font-semibold text-lg mb-4">单词列表</h2>
+            <h2 className="font-semibold text-lg mb-4">
+              单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）
+            </h2>
             <div className="overflow-auto max-h-64">
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
@@ -258,6 +363,8 @@ function importCSVFile(file) {
                     <th className="px-4 py-2">日语</th>
                     <th className="px-4 py-2">读音</th>
                     <th className="px-4 py-2">释义</th>
+                    <th className="px-4 py-2">添加时间</th>
+                    <th className="px-4 py-2">最新复习时间</th>
                     <th className="px-4 py-2">操作</th>
                   </tr>
                 </thead>
@@ -267,6 +374,8 @@ function importCSVFile(file) {
                       <td className="px-4 py-2">{w.word}</td>
                       <td className="px-4 py-2">{w.reading}</td>
                       <td className="px-4 py-2">{w.meaning}</td>
+                      <td className="px-4 py-2">{w.addedAt}</td> {/* Display added time */}
+                      <td className="px-4 py-2">{w.lastReviewedAt}</td> {/* Display last reviewed time */}
                       <td className="px-4 py-2">
                         <button className="bg-yellow-200 text-black px-2 py-1 rounded mr-2" onClick={() => openEditModal(w)}>编辑</button>
                         <button className="bg-red-200 text-black px-2 py-1 rounded" onClick={() => deleteWord(w.id)}>删除</button>
@@ -294,6 +403,18 @@ function importCSVFile(file) {
                 <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={checkAnswer}>检查</button>
                 <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={nextReview}>下一题</button>
               </div>
+              {/* 校验结果显示 */}
+              {isCorrect !== null && (
+                <div className={`mt-4 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+                  {isCorrect ? '✅ 正确' : '❌ 错误，请再试'}
+                  {/* 显示正确答案的详细信息 */}
+                  <div className="mt-2">
+                    <strong>正确答案:</strong>
+                    <div><strong>读音:</strong> {current.reading}</div>
+                    <div><strong>释义:</strong> {current.meaning}</div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -306,6 +427,9 @@ function importCSVFile(file) {
             onSave={saveWordEdit}
           />
         )}
+        {/* 自定义提示弹窗 */}
+       {toast && <div className="toast">{toast}</div>}
+
       </div>
     </div>
   );
