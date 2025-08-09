@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Papa from 'papaparse';
 import EditModal from './EditModal';  // 引入 EditModal 组件
+import ConfirmUpdateModal from './components/ConfirmUpdateModal'; // Import the modal
 
 const STORAGE_KEY = 'jp_vocab_v1';
 const WRONG_KEY = 'jp_vocab_wrong_v1';
@@ -28,6 +29,8 @@ export default function App() {
   const fileInputRef = useRef(null);
   const backupInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('words'); // Default tab is 'words'
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [wordToUpdate, setWordToUpdate] = useState(null)
 
 const handleCSVImportClick = () => {
   if (fileInputRef.current) fileInputRef.current.click();
@@ -72,27 +75,54 @@ const handleBackupImportClick = () => {
   const switchTab = (tab) => {
     setActiveTab(tab);
   };
-  function addWord() {
+
+
+  // Check if the word already exists in the list
+  const isWordExist = (newWord) => {
+    return words.some(word => word.word === newWord.word);
+  };
+
+  // Handle adding or updating the word
+  const addWord = () => {
     if (!form.word.trim() || !form.reading.trim()) {
-      showAlert('请输入单词、读音（释义可以选填）');
+      showAlert('请输入单词和读音');
       return;
     }
 
-    const newWord = {
-      id: uid(),
-      ...form,
-      addedAt: new Date().toISOString(),  // Store the current time as addedAt
-      lastReviewedAt: new Date().toISOString()  // Store the same time initially as lastReviewedAt
-    };
+    const existingWord = words.find(w => w.word === form.word.trim());
 
-    setWords(prev => [newWord, ...prev]);
-
-    setForm({ word: '', reading: '', meaning: '' });
-    if (wordInputRef.current) {
-      wordInputRef.current.focus();
+    if (existingWord) {
+      // If word exists, open the modal for confirmation
+      setWordToUpdate({
+        currentWord: existingWord,
+        updatedWord: { ...existingWord, ...form }
+      });
+      setIsModalOpen(true);
+    }  else {
+      // Add the new word if not already in the list
+      setWords(prev => [{ id: uid(), ...form }, ...prev]);
+      showAlert(`单词 "${form.word}" 已添加`);
     }
-  }
 
+    // Clear form after add or update
+    setForm({ word: '', reading: '', meaning: '' });
+  };
+
+  // Confirm the update and update the word
+  const handleConfirmUpdate = () => {
+    setWords(prevWords =>
+      prevWords.map(w => w.word === wordToUpdate.currentWord.word ? { ...w, ...form } : w)
+    );
+    showAlert(`单词 "${form.word}" 已更新`);
+    setIsModalOpen(false);
+    setForm({ word: '', reading: '', meaning: '' }); // Reset the form
+  };
+
+  // Cancel the update
+  const handleCancelUpdate = () => {
+    setIsModalOpen(false);
+    setForm({ word: '', reading: '', meaning: '' }); // Reset the form
+  };
 
   function deleteWord(id) {
     //if (!confirm('确定删除这个单词吗？')) return;
@@ -113,42 +143,75 @@ const handleBackupImportClick = () => {
 
   // CSV Export (BOM)
   function exportCSV() {
-    if (!words || words.length===0) { showAlert('单词表为空'); return; }
-    const rows = [['word','reading','meaning'], ...words.map(w => [w.word, w.reading, w.meaning])];
-    const csv = rows.map(r => r.map(c => `"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-    const bom = new Uint8Array([0xEF,0xBB,0xBF]);
+    if (!words || words.length === 0) {
+      showAlert('单词表为空');
+      return;
+    }
+
+    const rows = [
+      ['word', 'reading', 'meaning', 'addedAt', 'lastReviewedAt'], // Add headers for addedAt and lastReviewedAt
+      ...words.map(w => [
+        w.word,
+        w.reading,
+        w.meaning,
+        w.addedAt || '',  // Add addedAt, defaulting to empty string if not available
+        w.lastReviewedAt || '',  // Add lastReviewedAt, defaulting to empty string if not available
+      ]),
+    ];
+
+    const csv = rows
+      .map(r => r.map(c => `"${(c || '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
     const csvArray = new TextEncoder().encode(csv);
     const blob = new Blob([bom, csvArray], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `jp_words_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    a.href = url;
+    a.download = `jp_words_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
   }
 
-  function importCSVFile(file) {
+
+  // Handle importing words (CSV)
+  const importCSVFile = (file) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: function(results) {
-        const data = results.data
-          .filter(r => r.word && r.reading)  // 只检查 word 和 reading 是否存在
-          .map(r => ({
-            id: uid(),
-            word: r.word.trim(),
-            reading: r.reading.trim(),
-            meaning: r.meaning ? r.meaning.trim() : ''  // 如果缺少释义，设置为默认空字符串
-          }));
+      complete: function (results) {
+        const data = results.data.map(r => ({
+          id: uid(),
+          word: r.word.trim(),
+          reading: r.reading.trim(),
+          meaning: r.meaning ? r.meaning.trim() : '',
+          addedAt: r.addedAt ? r.addedAt.trim() : '',
+          lastReviewedAt: r.lastReviewedAt ? r.lastReviewedAt.trim() : '',
+        }));
 
-        if (data.length === 0) {
-          showAlert('文件没有有效行 (需要 word, reading, meaning 列)');
-          return;
-        }
-        // importCSVFile 改成这样
-        setWords(prev => [...data, ...prev]);
-        showAlert('导入完成');
+        // Check for existing words and prompt for update
+        data.forEach(newWord => {
+          if (isWordExist(newWord)) {
+            const confirmUpdate = window.confirm(`单词 "${newWord.word}" 已存在，是否更新？`);
+            if (confirmUpdate) {
+              // Update the existing word
+              setWords(prevWords => prevWords.map(w =>
+                w.word === newWord.word ? { ...w, ...newWord } : w
+              ));
+              showAlert(`单词 "${newWord.word}" 已更新`);
+            } else {
+              showAlert(`单词 "${newWord.word}" 没有更新`);
+            }
+          } else {
+            // Add the new word
+            setWords(prev => [newWord, ...prev]);
+            showAlert(`单词 "${newWord.word}" 已添加`);
+          }
+        });
       }
     });
-  }
+  };
 
   // review logic: show word only, check reading
   // 启动复习
@@ -213,36 +276,43 @@ const handleBackupImportClick = () => {
     });
   }
 
-  function exportBackup() {
-    const payload = { exportedAt: new Date().toISOString(), words, wrongBook, dailyStats };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `jp_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
-    URL.revokeObjectURL(url);
-  }
+function exportBackup() {
+  const payload = { exportedAt: new Date().toISOString(), words, wrongBook, dailyStats };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `jp_backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-  function importBackup(file) {
-    const fr = new FileReader();
-    fr.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        // if (data.words && Array.isArray(data.words)) {
-        //   setWords(prev => [...prev, ...data.words.map(w=>({...w, id: uid()}))]);
-        // }
-        // importBackup 改成这样
-        if (data.words && Array.isArray(data.words)) {
-          setWords(prev => [...data.words.map(w=>({...w, id: uid()})), ...prev]);
-        }
-        if (data.wrongBook) setWrongBook(prev => ({...prev, ...data.wrongBook}));
-        if (data.dailyStats) setDailyStats(prev => ({...prev, ...data.dailyStats}));
-        showAlert('导入备份成功');
-      } catch(err) {
-        showAlert('备份文件格式错误');
+function importBackup(file) {
+  const fr = new FileReader();
+  fr.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.words && Array.isArray(data.words)) {
+        setWords(prev => [
+          ...data.words.map(w => ({
+            ...w,
+            id: uid(), // Generate new IDs
+            addedAt: w.addedAt ? w.addedAt.trim() : '', // Set to empty string if not available
+            lastReviewedAt: w.lastReviewedAt ? w.lastReviewedAt.trim() : '', // Set to empty string if not available
+          })),
+          ...prev,
+        ]);
       }
-    };
-    fr.readAsText(file, 'utf-8');
-  }
+      if (data.wrongBook) setWrongBook(prev => ({ ...prev, ...data.wrongBook }));
+      if (data.dailyStats) setDailyStats(prev => ({ ...prev, ...data.dailyStats }));
+      showAlert('导入备份成功');
+    } catch (err) {
+      showAlert('备份文件格式错误');
+    }
+  };
+  fr.readAsText(file, 'utf-8');
+}
+
 
   // 显示编辑弹窗
   function openEditModal(word) {
@@ -420,11 +490,11 @@ function formatDate(dateString) {
               单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）
             </h2>
             {/* Word List Table */}
-            <div className="overflow-x-auto bg-white shadow-md rounded-lg">
+            <div className="overflow-x-auto bg-white shadow-md rounded-lg mb-6 max-h-[500px] overflow-y-auto">
               <table className="min-w-full table-auto">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-4 py-2 text-left">日语</th>
+                    <th className="px-4 py-2 text-left">单词</th>
                     <th className="px-4 py-2 text-left">读音</th>
                     <th className="px-4 py-2 text-left">释义</th>
                     <th className="px-4 py-2 text-left">添加时间</th>
@@ -496,6 +566,15 @@ function formatDate(dateString) {
         {/* 自定义提示弹窗 */}
        {toast && <div className="toast">{toast}</div>}
 
+      {/* Confirmation Modal for updating existing word */}
+      {isModalOpen && (
+        <ConfirmUpdateModal
+          currentWord={wordToUpdate.currentWord}
+          updatedWord={wordToUpdate.updatedWord}
+          onConfirm={handleConfirmUpdate}
+          onCancel={handleCancelUpdate}
+        />
+      )}
       </div>
     </div>
   );
