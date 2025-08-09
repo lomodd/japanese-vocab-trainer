@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>日语单词记忆工具 — 美化版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 小增强：使表格可横向滚动在小屏幕 */
+    .table-wrapper { overflow-x:auto; }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-gray-100 to-gray-50 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl sm:text-3xl font-bold">📘 日语单词记忆工具</h1>
+        <div class="text-sm text-gray-500">本地存储 · 无需网络</div>
+      </div>
+
+      <!-- 操作栏 -->
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="col-span-2">
+          <div class="flex gap-2">
+            <input id="word" placeholder="日语单词（例如：ありがとう）" class="flex-1 border rounded-lg p-2" />
+            <input id="meaning" placeholder="释义（中文/英文）" class="flex-1 border rounded-lg p-2" />
+            <button id="addBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">添加</button>
+          </div>
+          <div class="mt-2 text-xs text-gray-500">建议：单词+简短释义（便于快速输入/校验）</div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <button id="exportBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg">导出备份</button>
+            <label class="bg-white border rounded-lg px-3 py-2 flex items-center cursor-pointer hover:shadow">
+              导入
+              <input id="importFile" type="file" accept=".json" class="hidden" />
+            </label>
+          </div>
+          <div class="flex gap-2">
+            <button id="clearAllBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">清空所有数据</button>
+            <button id="themeToggle" class="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-lg text-sm">重置统计</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+
+      <!-- 左侧：管理 / 列表 -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">📋 单词管理</h2>
+          <div class="text-sm text-gray-500">总数：<span id="totalCount">0</span></div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-left">
+                <th class="px-3 py-2 border">日语</th>
+                <th class="px-3 py-2 border">释义</th>
+                <th class="px-3 py-2 border">操作</th>
+              </tr>
+            </thead>
+            <tbody id="wordList"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button id="exportCSV" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">导出 CSV</button>
+          <button id="editModeBtn" class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm">批量编辑（未选）</button>
+        </div>
+      </div>
+
+      <!-- 右侧：复习 / 错题 / 统计 -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-lg font-semibold mb-3">🔁 复习模式</h2>
+
+        <div class="flex gap-2 mb-3">
+          <button id="reviewAll" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg">复习全部</button>
+          <button id="reviewWrong" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg">复习错题本</button>
+        </div>
+
+        <div id="quizCard" class="border rounded-lg p-4">
+          <div id="quizWord" class="text-2xl font-bold mb-2 text-gray-800">请选择复习模式开始</div>
+          <input id="answer" placeholder="输入释义后点击检查（Enter 也可）" class="w-full border rounded-lg p-2 mb-3" />
+          <div class="flex gap-2">
+            <button id="checkBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">检查</button>
+            <button id="nextBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">下一题</button>
+            <button id="showAnswer" class="ml-auto bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded-lg text-sm">显示答案</button>
+          </div>
+          <div id="result" class="mt-3 font-medium"></div>
+        </div>
+
+        <div class="mt-5">
+          <h3 class="font-semibold mb-2">📚 错题本 <span class="text-sm text-gray-500">（可单独复习/清空）</span></h3>
+          <ul id="wrongList" class="list-disc pl-5 text-red-600 max-h-36 overflow-auto"></ul>
+          <div class="mt-2 flex gap-2">
+            <button id="clearWrongBtn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm">清空错题本</button>
+            <button id="removeWrongFromListBtn" class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm">从错题本移除已记住</button>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <h3 class="font-semibold mb-2">📈 今日进度</h3>
+          <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+            <div id="progressBar" class="bg-green-500 h-4 rounded-full" style="width:0%"></div>
+          </div>
+          <div class="text-sm text-gray-600" id="todayStats">今日已复习 0 / 20 题，正确率 0%</div>
+          <div class="mt-2 text-xs text-gray-500">目标题数（可改）：<input id="dailyGoal" type="number" class="w-20 border rounded px-2 py-1 ml-2" value="20" /></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 编辑模态 -->
+    <div id="editModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-xl p-6 w-full max-w-xl shadow-xl">
+        <h3 class="text-lg font-semibold mb-3">编辑单词</h3>
+        <div class="flex gap-2">
+          <input id="editWordInput" class="flex-1 border rounded-lg p-2" />
+          <input id="editMeaningInput" class="flex-1 border rounded-lg p-2" />
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button id="cancelEdit" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">取消</button>
+          <button id="saveEdit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-xs text-gray-400 text-center">提示：按 Enter 可提交答案 / 添加单词。所有数据保存在浏览器，不会上传。</div>
+  </div>
+
+<script>
+/* ==========================
+   本地存储键与初始设置
+   ========================== */
+const KEY_WORDS = 'jpWords_v1';
+const KEY_WRONG = 'jpWrongBook_v1';
+const KEY_DAILY = 'jpDailyStats_v1';
+
+let words = JSON.parse(localStorage.getItem(KEY_WORDS)) || [];
+let wrongBook = JSON.parse(localStorage.getItem(KEY_WRONG)) || {};
+// wrongBook as object keyed by word for easy dedupe: { "ありがとう": {word, meaning} }
+let dailyStats = JSON.parse(localStorage.getItem(KEY_DAILY)) || {};
+
+const todayKey = new Date().toISOString().split('T')[0];
+if (!dailyStats[todayKey]) dailyStats[todayKey] = { total: 0, correct: 0 };
+
+let currentWord = null;
+let reviewWrongOnly = false;
+
+/* ==========================
+   DOM refs
+   ========================== */
+const wordInput = document.getElementById('word');
+const meaningInput = document.getElementById('meaning');
+const addBtn = document.getElementById('addBtn');
+const wordListTbody = document.getElementById('wordList');
+const totalCount = document.getElementById('totalCount');
+const reviewAllBtn = document.getElementById('reviewAll');
+const reviewWrongBtn = document.getElementById('reviewWrong');
+const quizWord = document.getElementById('quizWord');
+const answerInput = document.getElementById('answer');
+const checkBtn = document.getElementById('checkBtn');
+const nextBtn = document.getElementById('nextBtn');
+const resultDiv = document.getElementById('result');
+const wrongListElm = document.getElementById('wrongList');
+const clearWrongBtn = document.getElementById('clearWrongBtn');
+const progressBar = document.getElementById('progressBar');
+const todayStats = document.getElementById('todayStats');
+const dailyGoalInput = document.getElementById('dailyGoal');
+const exportBtn = document.getElementById('exportBtn');
+const importFile = document.getElementById('importFile');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const exportCSV = document.getElementById('exportCSV');
+const editModal = document.getElementById('editModal');
+const editWordInput = document.getElementById('editWordInput');
+const editMeaningInput = document.getElementById('editMeaningInput');
+const saveEditBtn = document.getElementById('saveEdit');
+const cancelEditBtn = document.getElementById('cancelEdit');
+const showAnswerBtn = document.getElementById('showAnswer');
+const removeWrongFromListBtn = document.getElementById('removeWrongFromListBtn');
+
+/* ==========================
+   工具函数：保存与渲染
+   ========================== */
+function persist() {
+  localStorage.setItem(KEY_WORDS, JSON.stringify(words));
+  localStorage.setItem(KEY_WRONG, JSON.stringify(wrongBook));
+  localStorage.setItem(KEY_DAILY, JSON.stringify(dailyStats));
+  renderAll();
+}
+
+function renderAll() {
+  renderWords();
+  renderWrongBook();
+  updateCountsAndStats();
+}
+
+function renderWords() {
+  wordListTbody.innerHTML = '';
+  if (words.length === 0) {
+    wordListTbody.innerHTML = `<tr><td class="px-3 py-2 border" colspan="3"><div class="text-gray-400">当前没有单词 — 请在上方添加</div></td></tr>`;
+    totalCount.innerText = 0;
+    return;
+  }
+  words.forEach((w, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="px-3 py-2 border align-top">${escapeHtml(w.word)}</td>
+      <td class="px-3 py-2 border align-top">${escapeHtml(w.meaning)}</td>
+      <td class="px-3 py-2 border align-top">
+        <div class="flex gap-2">
+          <button class="py-1 px-2 text-sm bg-yellow-100 hover:bg-yellow-200 rounded" data-action="edit" data-idx="${idx}">编辑</button>
+          <button class="py-1 px-2 text-sm bg-red-100 hover:bg-red-200 rounded" data-action="delete" data-idx="${idx}">删除</button>
+          <button class="py-1 px-2 text-sm bg-blue-100 hover:bg-blue-200 rounded" data-action="add-wrong" data-idx="${idx}">加入错题</button>
+        </div>
+      </td>
+    `;
+    wordListTbody.appendChild(tr);
+  });
+  totalCount.innerText = words.length;
+}
+
+function renderWrongBook() {
+  wrongListElm.innerHTML = '';
+  const arr = Object.values(wrongBook || {});
+  if (arr.length === 0) {
+    wrongListElm.innerHTML = '<li class="text-gray-400">错题本为空</li>';
+    return;
+  }
+  arr.forEach(w => {
+    const li = document.createElement('li');
+    li.innerHTML = `${escapeHtml(w.word)} - ${escapeHtml(w.meaning)} <button class="ml-3 text-xs text-blue-600" data-action="remove-wrong" data-word="${escapeHtml(w.word)}">(移除)</button>`;
+    wrongListElm.appendChild(li);
+  });
+}
+
+function updateCountsAndStats() {
+  // 错题数显示在错题区域，同时 totalCount 已有
+  // 更新今日进度
+  const goal = parseInt(dailyGoalInput.value) || 20;
+  const stats = dailyStats[todayKey] || { total: 0, correct: 0 };
+  const percent = Math.min(Math.round((stats.total / goal) * 100), 100);
+  const accuracy = stats.total ? Math.round((stats.correct / stats.total) * 100) : 0;
+  progressBar.style.width = percent + '%';
+  todayStats.innerText = `今日已复习 ${stats.total} / ${goal} 题，正确率 ${accuracy}% （准确率含“接近正确”）`;
+}
+
+/* ==========================
+   事件：添加 / 编辑 / 删除
+   ========================== */
+addBtn.addEventListener('click', () => {
+  const w = wordInput.value.trim();
+  const m = meaningInput.value.trim();
+  if (!w || !m) { alert('请输入日语单词和释义'); return; }
+  words.push({ word: w, meaning: m });
+  wordInput.value = ''; meaningInput.value = '';
+  persist();
+});
+
+wordListTbody.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const idx = Number(btn.dataset.idx);
+  if (action === 'delete') {
+    if (!confirm('确定删除该单词？')) return;
+    words.splice(idx, 1);
+    persist();
+  } else if (action === 'edit') {
+    openEditModal(idx);
+  } else if (action === 'add-wrong') {
+    const item = words[idx];
+    wrongBook[item.word] = item;
+    persist();
+  }
+});
+
+/* ==========================
+   编辑模态
+   ========================== */
+let editingIndex = -1;
+function openEditModal(idx) {
+  editingIndex = idx;
+  editWordInput.value = words[idx].word;
+  editMeaningInput.value = words[idx].meaning;
+  editModal.classList.remove('hidden');
+  editModal.style.display = 'flex';
+}
+cancelEditBtn.addEventListener('click', closeEditModal);
+saveEditBtn.addEventListener('click', () => {
+  const w = editWordInput.value.trim();
+  const m = editMeaningInput.value.trim();
+  if (!w || !m) { alert('请输入日语单词和释义'); return; }
+  words[editingIndex] = {word: w, meaning: m};
+  closeEditModal();
+  persist();
+});
+function closeEditModal() {
+  editModal.classList.add('hidden');
+  editModal.style.display = 'none';
+}
+
+/* 点击模态背景也关闭 */
+editModal.addEventListener('click', (e) => {
+  if (e.target === editModal) closeEditModal();
+});
+
+/* ==========================
+   复习流程
+   ========================== */
+reviewAllBtn.addEventListener('click', () => startReview(false));
+reviewWrongBtn.addEventListener('click', () => startReview(true));
+
+function startReview(onlyWrong) {
+  reviewWrongOnly = onlyWrong;
+  const pool = onlyWrong ? Object.values(wrongBook) : words;
+  if (!pool || pool.length === 0) { alert(onlyWrong ? '错题本为空' : '单词表为空，请先添加单词'); return; }
+  nextQuestion();
+}
+
+function nextQuestion() {
+  const pool = reviewWrongOnly ? Object.values(wrongBook) : words;
+  if (!pool || pool.length === 0) { alert('当前题库为空'); return; }
+  currentWord = pool[Math.floor(Math.random() * pool.length)];
+  quizWord.innerText = currentWord ? currentWord.word : '—';
+  answerInput.value = '';
+  resultDiv.innerText = '';
+  answerInput.focus();
+}
+
+checkBtn.addEventListener('click', checkAnswer);
+answerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') checkAnswer();
+});
+nextBtn.addEventListener('click', nextQuestion);
+showAnswerBtn.addEventListener('click', () => {
+  if (!currentWord) return;
+  resultDiv.innerHTML = `<span class="text-yellow-700">答案：${escapeHtml(currentWord.meaning)}</span>`;
+});
+
+/* 检查答案：严格匹配 -> 相似度 >= 0.8 为接近正确 -> 否则错误（加入错题） */
+function checkAnswer() {
+  if (!currentWord) return alert('请先开始复习并显示题目');
+  const ans = answerInput.value.trim();
+  // 记录练习次数（每天）
+  dailyStats[todayKey].total = (dailyStats[todayKey].total || 0) + 1;
+
+  if (ans === currentWord.meaning) {
+    dailyStats[todayKey].correct = (dailyStats[todayKey].correct || 0) + 1;
+    resultDiv.innerHTML = `<span class="text-green-700">✅ 完全正确</span>`;
+  } else {
+    const sim = stringSimilarity(ans, currentWord.meaning);
+    if (sim >= 0.8) {
+      dailyStats[todayKey].correct = (dailyStats[todayKey].correct || 0) + 1;
+      resultDiv.innerHTML = `<span class="text-amber-700">⚠ 接近正确（相似度 ${(sim*100).toFixed(0)}%） — 答案：${escapeHtml(currentWord.meaning)}</span>`;
+    } else {
+      // 错误：加入错题本（去重）
+      wrongBook[currentWord.word] = currentWord;
+      resultDiv.innerHTML = `<span class="text-red-600">❌ 错误 — 答案：${escapeHtml(currentWord.meaning)}</span>`;
+    }
+  }
+  persist();
+}
+
+/* ==========================
+   错题本 操作
+   ========================== */
+clearWrongBtn.addEventListener('click', () => {
+  if (!confirm('确定清空错题本吗？')) return;
+  wrongBook = {};
+  persist();
+});
+
+wrongListElm.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  if (action === 'remove-wrong') {
+    const w = btn.dataset.word;
+    delete wrongBook[w];
+    persist();
+  }
+});
+
+removeWrongFromListBtn.addEventListener('click', () => {
+  // 从错题本删除那些已在主单词表中并且认为已经记住（例如：你输入了正确答案的单词），这里只给个手动操作：删除所有出现在主表中的单词
+  const mainWordsSet = new Set(words.map(w => w.word));
+  let removed = 0;
+  for (const k of Object.keys(wrongBook)) {
+    if (mainWordsSet.has(k)) { delete wrongBook[k]; removed++; }
+  }
+  if (removed === 0) alert('没有找到匹配的单词可移除');
+  persist();
+});
+
+/* ==========================
+   导入 / 导出 / 清空
+   ========================== */
+exportBtn.addEventListener('click', () => {
+  // 导出包含 words, wrongBook, dailyStats（便于恢复）
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    words,
+    wrongBook,
+    dailyStats
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `jp_words_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+importFile.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!confirm('导入会合并到当前单词表（同一单词以导入文件为准）。确认继续？')) { importFile.value = ''; return; }
+      // 合并 words（以 word 字段为 key，导入文件优先）
+      const map = {};
+      words.forEach(w => map[w.word] = w);
+      if (Array.isArray(data.words)) data.words.forEach(w => map[w.word] = w);
+      words = Object.values(map);
+      // 合并错题本（import wins）
+      if (data.wrongBook) wrongBook = {...wrongBook, ...data.wrongBook};
+      // 合并 dailyStats（覆盖/合并）
+      if (data.dailyStats) dailyStats = {...dailyStats, ...data.dailyStats};
+      persist();
+      alert('导入完成');
+    } catch (err) {
+      console.error(err);
+      alert('导入失败：文件格式错误');
+    } finally {
+      importFile.value = '';
+    }
+  };
+  reader.readAsText(file);
+});
+
+clearAllBtn.addEventListener('click', () => {
+  if (!confirm('确定清空本工具的所有本地数据吗？（单词、错题、统计）')) return;
+  words = []; wrongBook = {}; dailyStats = {}; dailyStats[todayKey] = { total:0, correct:0 };
+  persist();
+});
+
+/* 导出 CSV */
+exportCSV.addEventListener('click', () => {
+  if (!words || words.length === 0) { alert('单词表为空'); return; }
+  const rows = [['日语','释义'], ...words.map(w => [w.word, w.meaning])];
+  const csv = rows.map(r => r.map(c => `"${(c+'').replaceAll('"','""')}"`).join(',')).join('\n');
+  // 加上 UTF-8 BOM
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const csvArray = new TextEncoder().encode(csv);
+  const blob = new Blob([bom, csvArray], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `jp_words_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+});
+
+
+/* ==========================
+   小工具：相似度（Levenshtein）
+   ========================== */
+function stringSimilarity(a, b) {
+  if (!a && !b) return 1;
+  a = (a||'').toLowerCase();
+  b = (b||'').toLowerCase();
+  const d = levenshtein(a, b);
+  const maxLen = Math.max(a.length, b.length);
+  return maxLen === 0 ? 1 : (1 - d / maxLen);
+}
+function levenshtein(a, b) {
+  const la = a.length, lb = b.length;
+  if (la === 0) return lb;
+  if (lb === 0) return la;
+  const dp = Array.from({length: la + 1}, () => new Array(lb + 1).fill(0));
+  for (let i=0;i<=la;i++) dp[i][0]=i;
+  for (let j=0;j<=lb;j++) dp[0][j]=j;
+  for (let i=1;i<=la;i++){
+    for (let j=1;j<=lb;j++){
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[la][lb];
+}
+
+/* ==========================
+   辅助：转义 HTML（防注入） & escape
+   ========================== */
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+
+/* ==========================
+   初始化渲染
+   ========================== */
+renderAll();
+
+/* ==========================
+   小提示：回车快捷键（添加单词）
+   ========================== */
+meaningInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addBtn.click();
+});
+
+/* 输入答案并统计后自动下一题（可选）：如需自动下一题，请在 checkAnswer 末尾调用 nextQuestion() */
+// — 以上为完整功能代码
+</script>
+</body>
+</html>
