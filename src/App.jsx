@@ -378,87 +378,78 @@ function formatDate(dateString) {
           <div className="text-sm text-gray-500">本地存储 · 离线可用</div>
         </div>
 
-{/* Form */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-      {/* First Row: Word and Reading */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-600">日语单词</label>
-        <input
-          className="w-full border rounded p-2 mt-2"
-          placeholder="日语单词 (例: ありがとう)"
-          value={form.word}
-          onChange={e => setForm({ ...form, word: e.target.value })}
-          onKeyDown={handleKeyDown}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-semibold text-gray-600">读音</label>
-        <input
-          className="w-full border rounded p-2 mt-2"
-          placeholder="读音 (例: ありがとう)"
-          value={form.reading}
-          onChange={e => setForm({ ...form, reading: e.target.value })}
-          onKeyDown={handleKeyDown}
-        />
-      </div>
-    </div>
+  {/* Form */}
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+  {/* First Row: Word and Reading */}
+  <div>
+    <label className="block text-sm font-semibold text-gray-600">日语单词</label>
+    <input
+      className="w-full border rounded p-2 mt-2"
+      placeholder="日语单词 (例: ありがとう)"
+      value={form.word}
+      onChange={e => setForm({ ...form, word: e.target.value })}
+      onKeyDown={handleKeyDown}
+    />
+  </div>
+  <div>
+    <label className="block text-sm font-semibold text-gray-600">读音</label>
+    <input
+      className="w-full border rounded p-2 mt-2"
+      placeholder="读音 (例: ありがとう)"
+      value={form.reading}
+      onChange={e => setForm({ ...form, reading: e.target.value })}
+      onKeyDown={handleKeyDown}
+    />
+  </div>
+</div>
 
-    {/* Second Row: Meaning and Action Buttons */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-semibold text-gray-600">释义</label>
-        <input
-          className="w-full border rounded p-2 mt-2"
-          placeholder="释义 (例: 谢谢)"
-          value={form.meaning}
-          onChange={e => setForm({ ...form, meaning: e.target.value })}
-          onKeyDown={handleKeyDown}
-        />
-      </div>
+{/* Second Row: Meaning and Action Buttons */}
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-semibold text-gray-600">释义</label>
+    <input
+      className="w-full border rounded p-2 mt-2"
+      placeholder="释义 (例: 谢谢)"
+      value={form.meaning}
+      onChange={e => setForm({ ...form, meaning: e.target.value })}
+      onKeyDown={handleKeyDown}
+    />
+  </div>
 
-      <div className="flex gap-4">
-        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onClick={addWord}>添加</button>
-        <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={exportCSV}>导出 CSV</button>
-        <button className="bg-green-200 text-black px-4 py-2 rounded hover:bg-green-300" onClick={exportBackup}>导出备份 (JSON)</button>
-     <button
-              className="bg-orange-600 text-black px-4 py-2 rounded"
-              onClick={handleCSVImportClick}
-            >
-              导入 CSV
-            </button>
-            <input
-              type="file"
-              accept=".csv"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                if (e.target.files.length > 0) {
-                  importCSVFile(e.target.files[0]);
-                  e.target.value = ""; // 重置
-                }
-              }}
-            />
+  <div className="flex gap-4">
+    <button className="bg-blue-600 text-white text-sm px-5 py-1 rounded hover:bg-blue-700" onClick={addWord}>添加</button>
+    <button className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700" onClick={exportCSV}>导出 CSV</button>
+    <button className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700" onClick={exportBackup}>导出 (JSON)</button>
+    <button className="bg-white border rounded-lg text-sm px-3 py-1 flex items-center cursor-pointer hover:shadow" onClick={handleCSVImportClick}>导入 CSV</button>
+    <input
+      type="file"
+      accept=".csv"
+      ref={fileInputRef}
+      style={{ display: 'none' }}
+      onChange={(e) => {
+        if (e.target.files.length > 0) {
+          importCSVFile(e.target.files[0]);
+          e.target.value = ""; // 重置
+        }
+      }}
+    />
+    <button className="bg-white border rounded-lg text-sm px-3 py-1 flex items-center cursor-pointer hover:shadow" onClick={handleBackupImportClick}>导入(JSON)</button>
+    <input
+      type="file"
+      accept=".json"
+      ref={backupInputRef}
+      style={{ display: 'none' }}
+      onChange={(e) => {
+        if (e.target.files.length > 0) {
+          importBackup(e.target.files[0]);
+          e.target.value = ""; // 重置
+        }
+      }}
+    />
+  </div>
 
-            <button
-              className="bg-orange-200 text-black px-4 py-2 rounded"
-              onClick={handleBackupImportClick}
-            >
-              导入备份 (JSON)
-            </button>
-            <input
-              type="file"
-              accept=".json"
-              ref={backupInputRef}
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                if (e.target.files.length > 0) {
-                  importBackup(e.target.files[0]);
-                  e.target.value = ""; // 重置
-                }
-              }}
-            />
-      </div>
-    </div>
+</div>
+
 
         {/* Main */}
 {/* Tab Buttons */}
@@ -493,21 +484,21 @@ function formatDate(dateString) {
             <div className="overflow-x-auto bg-white shadow-md rounded-lg mb-6 max-h-[500px] overflow-y-auto">
               <table className="min-w-full table-auto">
                 <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-2 text-left">单词</th>
-                    <th className="px-4 py-2 text-left">读音</th>
-                    <th className="px-4 py-2 text-left">释义</th>
-                    <th className="px-4 py-2 text-left">添加时间</th>
-                    <th className="px-4 py-2 text-left">最新复习时间</th>
-                    <th className="px-4 py-2 text-left">操作</th>
-                  </tr>
+                <tr>
+                  <th className="px-4 py-2 text-left min-w-[100px] sm:min-w-[120px]">单词</th>
+                  <th className="px-4 py-2 text-left min-w-[100px] sm:min-w-[120px]">读音</th>
+                  <th className="px-4 py-2 text-left min-w-[120px] sm:min-w-[150px]">释义</th>
+                  <th className="px-4 py-2 text-left min-w-[120px] sm:min-w-[150px]">添加时间</th>
+                  <th className="px-4 py-2 text-left min-w-[120px] sm:min-w-[150px]">最新复习时间</th>
+                  <th className="px-4 py-2 text-left min-w-[80px] sm:min-w-[100px]">操作</th>
+                </tr>
                 </thead>
                 <tbody>
                   {words.map(w => (
                     <tr key={w.id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2">{w.word}</td>
                       <td className="px-4 py-2">{w.reading}</td>
-                      <td className="px-4 py-2">{w.meaning}</td>
+                      <td className="px-4 py-2 whitespace-normal">{w.meaning}</td>
                       <td className="px-4 py-2">{formatDate(w.addedAt)}</td>
                       <td className="px-4 py-2">{formatDate(w.lastReviewedAt)}</td>
                       <td className="px-4 py-2 flex gap-2">
@@ -533,7 +524,17 @@ function formatDate(dateString) {
             <div className="border rounded p-3 mt-6">
               <div className="text-xl font-bold mb-2">{current ? current.word : '点击开始复习'}</div>
               <div className="text-sm text-gray-600 mb-2">{current ? current.meaning : ''}</div>
-              <input className="w-full border rounded p-2 mb-2" placeholder="输入读音并回车或点击检查" value={answer} onChange={e => setAnswer(e.target.value)} />
+              <input 
+                className="w-full border rounded p-2 mb-2"
+                placeholder="输入读音并回车或点击检查"
+                value={answer}
+                onChange={e => setAnswer(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    checkAnswer();  // 按回车时自动检查答案
+                  }
+                }}
+                />
               <div className="flex gap-4">
                 <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={checkAnswer}>检查</button>
                 <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={nextReview}>下一题</button>
