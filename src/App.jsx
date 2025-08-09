@@ -106,6 +106,9 @@ const handleBackupImportClick = () => {
 
     // Clear form after add or update
     setForm({ word: '', reading: '', meaning: '' });
+    if (wordInputRef.current) {
+      wordInputRef.current.focus();
+    }
   };
 
   // Confirm the update and update the word
@@ -344,7 +347,7 @@ function importBackup(file) {
       addWord();
     }
   };
-  
+
 function formatDate(dateString) {
   const date = new Date(dateString);
   
@@ -385,6 +388,7 @@ function formatDate(dateString) {
   <div>
     <label className="block text-sm font-semibold text-gray-600">日语单词</label>
     <input
+      ref={wordInputRef}
       className="w-full border rounded p-2 mt-2"
       placeholder="日语单词 (例: ありがとう)"
       value={form.word}
