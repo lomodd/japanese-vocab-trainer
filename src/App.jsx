@@ -30,7 +30,9 @@ export default function App() {
   const backupInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('words'); // Default tab is 'words'
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [wordToUpdate, setWordToUpdate] = useState(null)
+  const [wordToUpdate, setWordToUpdate] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [overwriteAll, setOverwriteAll] = useState(false);  // State to track if all words should be overwritten
 
 const handleCSVImportClick = () => {
   if (fileInputRef.current) fileInputRef.current.click();
@@ -100,6 +102,7 @@ const handleBackupImportClick = () => {
       setIsModalOpen(true);
     }  else {
       // Add the new word if not already in the list
+
       setWords(prev => [{ id: uid(), ...form }, ...prev]);
       showAlert(`单词 "${form.word}" 已添加`);
     }
@@ -110,6 +113,7 @@ const handleBackupImportClick = () => {
       wordInputRef.current.focus();
     }
   };
+
 
   // Confirm the update and update the word
   const handleConfirmUpdate = () => {
@@ -179,6 +183,7 @@ const handleBackupImportClick = () => {
 
 
   // Handle importing words (CSV)
+  // Handle CSV import
   const importCSVFile = (file) => {
     Papa.parse(file, {
       header: true,
@@ -193,26 +198,39 @@ const handleBackupImportClick = () => {
           lastReviewedAt: r.lastReviewedAt ? r.lastReviewedAt.trim() : '',
         }));
 
-        // Check for existing words and prompt for update
+        // Ask whether to overwrite all
+        const overwriteAllPrompt = window.confirm('是否覆盖所有现有单词？如果选择是，所有重复单词将直接更新。');
+        setOverwriteAll(overwriteAllPrompt);
+
+        setImporting(true);
+
         data.forEach(newWord => {
           if (isWordExist(newWord)) {
-            const confirmUpdate = window.confirm(`单词 "${newWord.word}" 已存在，是否更新？`);
-            if (confirmUpdate) {
-              // Update the existing word
+            if (overwriteAllPrompt) {
+              // Automatically update all words if overwrite all is selected
               setWords(prevWords => prevWords.map(w =>
                 w.word === newWord.word ? { ...w, ...newWord } : w
               ));
               showAlert(`单词 "${newWord.word}" 已更新`);
             } else {
-              showAlert(`单词 "${newWord.word}" 没有更新`);
+              const confirmUpdate = window.confirm(`单词 "${newWord.word}" 已存在，是否更新？`);
+              if (confirmUpdate) {
+                // Update the existing word
+                setWords(prevWords => prevWords.map(w =>
+                  w.word === newWord.word ? { ...w, ...newWord } : w
+                ));
+                showAlert(`单词 "${newWord.word}" 已更新`);
+              } else {
+                showAlert(`单词 "${newWord.word}" 没有更新`);
+              }
             }
           } else {
-            // Add the new word
-            setWords(prev => [newWord, ...prev]);
+            setWords(prev => [newWord, ...prev]);  // Add the new word if not present
             showAlert(`单词 "${newWord.word}" 已添加`);
           }
         });
-      }
+        setImporting(false);
+      },
     });
   };
 
