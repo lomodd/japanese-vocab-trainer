@@ -19,7 +19,7 @@ function EditModal({ wordData, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-gray-500/30 flex justify-center items-center">
       <div className="bg-white rounded-lg p-6 w-96">
         <h2 className="text-xl font-bold mb-4">编辑单词</h2>
         <div className="mb-4">

@@ -1,6 +1,15 @@
-@tailwind base;
+/*@tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; 旧版本
+*/
+@import "tailwindcss"; /* 4.1*/
+@import "tailwindcss";
+
+@layer base {
+  button {
+    @apply cursor-pointer;
+  }
+}
 
 /* small custom */
 body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }

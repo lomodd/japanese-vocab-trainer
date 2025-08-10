@@ -443,12 +443,17 @@ export default function WordModule() {
         </div>
 
         <div className="flex flex-wrap gap-3 justify-center mt-4">
-          <button className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-200" onClick={addWord}>添加</button>
-          <button className="bg-green-100 text-green-800 px-3 py-2 rounded-lg hover:bg-green-200" onClick={exportCSV}>导出 CSV</button>
-          <button className="bg-green-100 text-green-800 px-3 py-2 rounded-lg hover:bg-green-200" onClick={exportBackup}>导出 (JSON)</button>
-          <button className="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg hover:bg-orange-200" onClick={() => fileInputRef.current.click()}>导入 CSV</button>
+          <button className="text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" 
+            onClick={addWord}>添加</button>
+          <button className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
+            onClick={exportCSV}>导出 CSV</button>  
+          <button className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
+            onClick={() => fileInputRef.current.click()}>导入 CSV</button>
           <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importCSVFile(e.target.files[0]); e.target.value = ""; } }} />
-          <button className="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg hover:bg-orange-200" onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
+          <button className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
+           onClick={exportBackup}>导出 (JSON)</button>
+          <button className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700" 
+            onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
           <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importBackup(e.target.files[0]); e.target.value = ""; } }} />
         </div>
       </div>
