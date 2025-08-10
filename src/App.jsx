@@ -259,38 +259,34 @@ const handleBackupImportClick = () => {
     setIsCorrect(null);
   };
 
-  function nextReview() {
-    const pool = reviewOnlyWrong ? Object.values(wrongBook) : words;
-    if (!pool || pool.length === 0) {
-      setCurrent(null);
-      setMode('list');
-      return;
-    }
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    setCurrent(pick);
-    setAnswer('');
-    setIsCorrect(null); // 新题不显示上题的结果
+// 修改 nextReview()
+function nextReview() {
+  const pool = reviewOnlyWrong ? Object.values(wrongBook) : words;
+  if (!pool || pool.length === 0) {
+    setCurrent(null);
+    setMode('list');
+    return;
   }
-
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  setCurrent(pick);
+  setAnswer('');
+  setIsCorrect(null);
+}
 
   function normalize(s){ return (s||'').trim().toLowerCase().replace(/[。.,!！，]/g,''); }
 
-  // 校验答案
+// 修改 checkAnswer()
 const checkAnswer = () => {
   if (!current) return;
-
   const user = answer.trim().toLowerCase();
   const correct = current.reading.trim().toLowerCase();
-
-  // 严格匹配（忽略标点符号）
   const normalize = s => (s || '').trim().toLowerCase().replace(/[。.,!！，]/g, '');
   const isExact = normalize(user) === normalize(correct);
-
-  // 接近匹配（包含关系）
-  const isSimilar = !isExact && (normalize(correct).includes(normalize(user)) || normalize(user).includes(normalize(correct)));
+  const isSimilar = !isExact && normalize(user) &&
+    (normalize(correct).includes(normalize(user)) || normalize(user).includes(normalize(correct)));
 
   if (isExact) {
-    setIsCorrect('exact'); // ✅ 正确
+    setIsCorrect('exact');
     setWrongBook(prev => {
       const copy = { ...prev };
       if (copy[current.word]) delete copy[current.word];
@@ -301,14 +297,15 @@ const checkAnswer = () => {
       w.id === current.id ? { ...w, lastReviewedAt: new Date().toISOString() } : w
     ));
   } else if (isSimilar) {
-    setIsCorrect('similar'); // ⚠ 接近
+    setIsCorrect('similar');
     setWrongBook(prev => ({ ...prev, [current.word]: current }));
     updateDaily(false);
   } else {
-    setIsCorrect('wrong'); // ❌ 错误
+    setIsCorrect('wrong');
     setWrongBook(prev => ({ ...prev, [current.word]: current }));
     updateDaily(false);
   }
+
 };
 
 
@@ -585,15 +582,16 @@ function formatDate(dateString) {
                 placeholder="输入读音并回车或点击检查"
                 value={answer}
                 onChange={e => setAnswer(e.target.value)}
+                // 修改输入框回车逻辑
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    if (isCorrect === null) {
-                      checkAnswer(); // 第一次回车 → 检查答案
-                    } else {
-                      nextReview();  // 再次回车 → 下一题
+                    checkAnswer();
+                    if (isCorrect === 'exact') {
+                      nextReview();
                     }
                   }
                 }}
+
               />
               <div className="flex gap-4">
                 <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={checkAnswer}>检查</button>
