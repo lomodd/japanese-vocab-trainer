@@ -22,30 +22,31 @@ export default function App() {
 
       <div className="max-w-6xl mx-auto rounded-2xl p-2">
           {/* 顶部标题和模块切换 */}
-        <div className="flex justify-center my-2">
-          <div className="bg-gray-200 p-1 rounded-full flex space-x-1 relative">
-            <button
-              className={`px-4 py-2 rounded-full transition-all duration-300 ${
-                activeModule === 'word'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'text-gray-700 hover:text-gray-900'
-              }`}
-              onClick={() => setActiveModule('word')}
-            >
-              单词记忆
-            </button>
-            <button
-              className={`px-4 py-2 rounded-full transition-all duration-300 ${
-                activeModule === 'grammar'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'text-gray-700 hover:text-gray-900'
-              }`}
-              onClick={() => setActiveModule('grammar')}
-            >
-              语法笔记
-            </button>
-          </div>
-        </div>
+<div className="flex justify-center my-4">
+  <div className="p-1 rounded-full flex space-x-2 bg-zinc-800/60 backdrop-blur-md border border-white/10">
+    <button
+      className={`px-6 py-2 rounded-full font-medium transition-all duration-300
+        ${activeModule === 'word'
+          ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-blue-500/30'
+          : 'bg-transparent text-gray-300 hover:text-white hover:shadow-lg hover:shadow-blue-500/30'
+        }`}
+      onClick={() => setActiveModule('word')}
+    >
+      单词记忆
+    </button>
+    <button
+      className={`px-6 py-2 rounded-full font-medium transition-all duration-300
+        ${activeModule === 'grammar'
+          ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-pink-500/30'
+          : 'bg-transparent text-gray-300 hover:text-white hover:shadow-lg hover:shadow-pink-500/30'
+        }`}
+      onClick={() => setActiveModule('grammar')}
+    >
+      语法笔记
+    </button>
+  </div>
+</div>
+
 
 
         {/* 模块内容 */}
