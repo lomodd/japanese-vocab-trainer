@@ -321,7 +321,14 @@ const nextImport = () => {
 
       {/* 列表：每项默认限高，点击展开 */}
       <div className="rounded p-4">
-        <h2 className="font-semibold text-lg mb-4">语法列表（共 {notes.length} 个）</h2>
+          {notes.length === 0 ? (
+            <div className="text-center text-gray-400 py-6">
+              📥 请导入或者输入语法笔记
+            </div>
+          ) : (
+            <h2 className="font-semibold text-lg mb-4">语法列表（共 {notes.length} 个）</h2>
+          )} 
+
         <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-1">
         {notes.map((note) => {
           const expanded = isExpanded(note.id);

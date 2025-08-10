@@ -571,7 +571,13 @@ const nextImport = () => {
       {/* 列表和复习 */}
       {activeTab === 'words' && (
         <div className="rounded p-4">
-          <h2 className="font-semibold text-lg mb-4">单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）</h2>
+          {words.length === 0 ? (
+            <div className="text-center text-gray-400 py-6">
+              📥 请导入或者输入添加单词
+            </div>
+          ) : (
+            <h2 className="font-semibold text-lg mb-4">单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）</h2>
+          )}  
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1 ">
             {words.map((w) => (
               <div key={w.id} className="bg-white rounded-xl shadow p-4 border border-gray-400 hover:border-blue-400 hover:shadow-lg transition-shadow relative group">
@@ -592,7 +598,6 @@ const nextImport = () => {
 
       {activeTab === 'review' && (
         <div className="bg-gray-50 rounded p-4">
-          <h2 className="font-semibold text-lg mb-2">复习</h2>
           <div className="text-sm mb-4 text-gray-600">
             {reviewOnlyWrong ? `❌ 复习范围：错题本（共 ${Object.keys(wrongBook).length} 个）` : `📚 复习范围：全部单词（共 ${words.length} 个）`}
           </div>
@@ -609,46 +614,92 @@ const nextImport = () => {
             </button>
           </div>
 
-          <div className="border rounded p-3 mt-6">
-            {current && <div className="mb-2 text-sm text-gray-500">进度：{reviewIndex + 1} / {reviewList.length}</div>}
-            {hasStarted && reviewIndex >= reviewList.length && (
-              <div className="text-center text-lg text-green-600">🎉 已经完成本轮复习！</div>
-            )}
-            <div className="text-xl font-bold mb-2">{current ? current.word : '点击开始复习'}</div>
-            <div className="text-sm text-gray-600 mb-2">{current ? current.meaning : ''}</div>
-            <input
-              className="w-full border rounded p-2 mb-2"
-              placeholder="输入读音并回车或点击检查"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  checkAnswer();
-                  if (isCorrect === 'exact') {
-                    nextReview();
-                  }
-                }
-              }}
-            />
-            <div className="flex gap-4">
-              <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={checkAnswer}>检查</button>
-              <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={nextReview}>下一题</button>
-            </div>
-            {hasStarted && reviewIndex < reviewList.length && current && isCorrect && (
-              <div className={`mt-4 ${isCorrect === 'exact' ? 'text-green-500' : isCorrect === 'similar' ? 'text-yellow-500' : 'text-red-500'}`}>
-                {isCorrect === 'exact' && '✅ 正确'}
-                {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
-                {isCorrect === 'wrong' && '❌ 错误，请再试'}
-                
-                <div className="mt-2">
-                  <strong>正确答案:</strong>
-                  <div><strong>读音:</strong> {current.reading}</div>
-                  <div><strong>释义:</strong> {current.meaning}</div>
-                </div>
-                
-              </div>
-            )}
-          </div>
+<div
+  className={`mt-6 p-6 rounded-2xl shadow-lg border transition-all duration-300 backdrop-blur-md bg-white/10 
+    ${isCorrect === 'exact'
+      ? 'border-green-500'
+      : isCorrect === 'similar'
+      ? 'border-yellow-500'
+      : isCorrect === 'wrong'
+      ? 'border-red-500'
+      : 'border-gray-500'}`}
+>
+  {current && (
+    <div className="mb-3 text-sm text-gray-500">
+      进度：{reviewIndex + 1} / {reviewList.length}
+    </div>
+  )}
+
+  {hasStarted && reviewIndex >= reviewList.length && (
+    <div className="text-center text-lg text-green-400 font-semibold">
+      🎉 已经完成本轮复习！
+    </div>
+  )}
+
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+    <div className="text-2xl font-bold mb-3">{current ? current.word : '点击开始复习'}</div>
+    <div className="text-lg text-blue-600 mb-4">{current ? current.meaning : ''}</div>
+  </div>
+
+
+  <input
+    className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400"
+    placeholder="输入读音并回车或点击检查"
+    value={answer}
+    onChange={(e) => setAnswer(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter') {
+        checkAnswer();
+        if (isCorrect === 'exact') {
+          nextReview();
+        }
+      }
+    }}
+  />
+
+  <div className="flex gap-4">
+    <button
+      className="flex-1 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl transition"
+      onClick={checkAnswer}
+    >
+      检查
+    </button>
+    <button
+      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-xl transition"
+      onClick={nextReview}
+    >
+      下一题
+    </button>
+
+  </div>
+
+  {hasStarted && reviewIndex < reviewList.length && current && isCorrect && (
+    <div
+      className={`mt-6 ${
+        isCorrect === 'exact'
+          ? 'text-green-400'
+          : isCorrect === 'similar'
+          ? 'text-yellow-400'
+          : 'text-red-400'
+      }`}
+    >
+      {isCorrect === 'exact' && '✅ 正确'}
+      {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
+      {isCorrect === 'wrong' && '❌ 错误，请再试'}
+
+      <div className="mt-3 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+        <strong className="block text-gray-200 mb-1">正确答案:</strong>
+        <div className="text-blue-300">
+          <strong>读音:</strong> {current.reading}
+        </div>
+        <div className="text-gray-300">
+          <strong>释义:</strong> {current.meaning}
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
         </div>
       )}
 
