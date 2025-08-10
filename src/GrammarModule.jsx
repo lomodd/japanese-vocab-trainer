@@ -235,23 +235,23 @@ const nextImport = () => {
   return (
     <div>
       {/* 表单 */}
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-white/5 backdrop-blur-md border border-white/10 shadow-lg rounded-2xl p-6">
         <div className="">
           <input
-            className="w-full border rounded-lg p-2 mb-3"
+            className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-4003"
             placeholder="语法标题"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <textarea
-            className="w-full border rounded-lg p-2 mb-3"
+            className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400"
             placeholder="语法内容"
             rows={3}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
           <textarea
-            className="w-full border rounded-lg p-2 mb-3"
+            className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400"
             placeholder="例句"
             rows={2}
             value={form.example}
@@ -317,7 +317,7 @@ const nextImport = () => {
       </div>
 
       {/*主块区 语法列表 */}
-<div class="backdrop-blur-md bg-white/80 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
+<div class="backdrop-blur-md bg-white/90 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
 
       {/* 列表：每项默认限高，点击展开 */}
       <div className="rounded p-4">

@@ -6,7 +6,20 @@ export default function App() {
   const [activeModule, setActiveModule] = useState('word'); // 'words' 或 'grammar'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white">
+<div className="min-h-screen bg-zinc-900 relative overflow-hidden">
+  {/* 深色渐变底色 */}
+  <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900"></div>
+
+  {/* 光斑层 */}
+  <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+  <div className="absolute top-2/3 left-2/4 w-[28rem] h-[28rem] bg-blue-400/10 rounded-full blur-[100px]"></div>
+  <div className="absolute top-0 left-0 w-[20rem] h-[20rem] bg-purple-500/10 rounded-full blur-[120px]"></div>
+  <div className="absolute bottom-0 right-0 w-[25rem] h-[25rem] bg-pink-400/10 rounded-full blur-[120px]"></div>
+
+  {/* 内容区域 */}
+  <div className="relative z-10 ">
+    {/* 这里放你的内容 */}
+
       <div className="max-w-6xl mx-auto rounded-2xl p-2">
           {/* 顶部标题和模块切换 */}
         <div className="flex justify-center my-2">
@@ -37,9 +50,12 @@ export default function App() {
 
         {/* 模块内容 */}
         <div className="transition-opacity duration-500" key={activeModule}>
-          {activeModule === 'word' ? <WordModule /> : <GrammarModule />}
+          {activeModule === 'word' ? 
+          <WordModule /> : <GrammarModule />}
         </div>
       </div>
-    </div>
+  </div>
+</div>
+
   );
 }

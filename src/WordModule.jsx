@@ -516,26 +516,26 @@ const nextImport = () => {
   return (
     <div>
       {/* 表单区域 */}
-<div class="backdrop-blur-md bg-white/80 border border-gray-200 rounded-xl p-6 shadow-sm">
-
+<div className="relative rounded-2xl p-[2px] bg-gradient-to-r from-stone-900 via-gray-900 to-zinc-900 shadow-lg">
+  <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <input
             ref={wordInputRef}
-            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
             placeholder="日语单词"
             value={form.word}
             onChange={(e) => setForm({ ...form, word: e.target.value })}
             onKeyDown={handleKeyDown}
           />
           <input
-            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
             placeholder="读音"
             value={form.reading}
             onChange={(e) => setForm({ ...form, reading: e.target.value })}
             onKeyDown={handleKeyDown}
           />
           <input
-            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
             placeholder="释义"
             value={form.meaning}
             onChange={(e) => setForm({ ...form, meaning: e.target.value })}
@@ -557,10 +557,11 @@ const nextImport = () => {
             onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
           <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importJSON(e.target.files[0]); e.target.value = ""; } }} />
         </div>
-      </div>
-
+    {/* 内容 */}
+  </div>
+</div>
       {/*主块区 单词列表 和 复习 */}
-<div class="backdrop-blur-md bg-white/80 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
+<div class="backdrop-blur-md bg-white/90 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
 
       {/* 内部 Tab */}
       <div className="flex border-b">
@@ -597,7 +598,7 @@ const nextImport = () => {
       )}
 
       {activeTab === 'review' && (
-        <div className="bg-gray-50 rounded p-4">
+        <div className="rounded p-4">
           <div className="text-sm mb-4 text-gray-600">
             {reviewOnlyWrong ? `❌ 复习范围：错题本（共 ${Object.keys(wrongBook).length} 个）` : `📚 复习范围：全部单词（共 ${words.length} 个）`}
           </div>
