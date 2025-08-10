@@ -337,7 +337,7 @@ const nextImport = () => {
                            hover:border-purple-400 hover:shadow-lg transition-all duration-300 relative group"       >
 
                 {/* 操作按钮 */}
-                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     className="p-1 rounded-full hover:bg-yellow-100 cursor-pointer"
                     onClick={() => setEditingNote(note)}

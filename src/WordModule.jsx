@@ -582,7 +582,7 @@ const nextImport = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1 ">
             {words.map((w) => (
               <div key={w.id} className="bg-white rounded-xl shadow p-4 border border-gray-400 hover:border-blue-400 hover:shadow-lg transition-shadow relative group">
-                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button className="p-1 rounded-full hover:bg-yellow-200" onClick={() => openEditWordModal(w)}>✏️</button>
                   <button className="p-1 rounded-full hover:bg-red-200" onClick={() => deleteWord(w.id)}>🗑</button>
                 </div>
