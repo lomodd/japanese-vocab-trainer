@@ -214,33 +214,38 @@ const handleBackupImportClick = () => {
 
         setImporting(true);
 
-        data.forEach(newWord => {
-          if (isWordExist(newWord)) {
-            if (overwriteAllPrompt) {
-              // Automatically update all words if overwrite all is selected
-              setWords(prevWords => prevWords.map(w =>
-                w.word === newWord.word ? { ...w, ...newWord } : w
-              ));
-              showAlert(`单词 "${newWord.word}" 已更新`);
-            } else {
-              const confirmUpdate = window.prompt(`单词 "${newWord.word}" 已存在，是否更新？ 直接回车更新，输入1 更新所有`);
-              if (confirmUpdate == null) {
-                // Update the existing word
-                setWords(prevWords => prevWords.map(w =>
-                  w.word === newWord.word ? { ...w, ...newWord } : w
-                ));
-                showAlert(`单词 "${newWord.word}" 已更新`);
-              } else if (confirmUpdate == 1){
-                overwriteAllPrompt = true;
-                setOverwriteAll(true);
-                showAlert(`本次已经存在单词都将被更新`);
-              }
-            }
-          } else {
-            setWords(prev => [newWord, ...prev]);  // Add the new word if not present
-            showAlert(`单词 "${newWord.word}" 已添加`);
-          }
-        });
+// 原来的导入逻辑改成：
+const newList = [];
+data.forEach(newWord => {
+  if (isWordExist(newWord)) {
+    if (overwriteAllPrompt) {
+      setWords(prevWords => prevWords.map(w =>
+        w.word === newWord.word ? { ...w, ...newWord } : w
+      ));
+      showAlert(`单词 "${newWord.word}" 已更新`);
+    } else {
+      const confirmUpdate = window.prompt(`单词 "${newWord.word}" 已存在，是否更新？ 直接回车更新，输入1 更新所有`);
+      if (confirmUpdate == null) {
+        setWords(prevWords => prevWords.map(w =>
+          w.word === newWord.word ? { ...w, ...newWord } : w
+        ));
+        showAlert(`单词 "${newWord.word}" 已更新`);
+      } else if (confirmUpdate == 1){
+        overwriteAllPrompt = true;
+        setOverwriteAll(true);
+        showAlert(`本次已经存在单词都将被更新`);
+      }
+    }
+  } else {
+    newList.push(newWord); // 先放到临时数组
+  }
+});
+
+// 最后一次性加到前面（保持 CSV 原始顺序）
+if (newList.length > 0) {
+  setWords(prev => [...newList, ...prev]);
+}
+
         setImporting(false);
       },
     });
@@ -464,37 +469,26 @@ function exportWrongBookCSV() {
         </div>
 
   {/* Form */}
-<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-  {/* First Row: Word and Reading */}
-  <div>
-    <label className="block text-sm font-semibold text-gray-600">日语单词</label>
+{/* Form */}
+<div className="bg-white rounded-xl shadow p-4 mb-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
     <input
       ref={wordInputRef}
-      className="w-full border rounded p-2 mt-2"
+      className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
       placeholder="日语单词 (例: ありがとう)"
       value={form.word}
       onChange={e => setForm({ ...form, word: e.target.value })}
       onKeyDown={handleKeyDown}
     />
-  </div>
-  <div>
-    <label className="block text-sm font-semibold text-gray-600">读音</label>
     <input
-      className="w-full border rounded p-2 mt-2"
+      className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
       placeholder="读音 (例: ありがとう)"
       value={form.reading}
       onChange={e => setForm({ ...form, reading: e.target.value })}
       onKeyDown={handleKeyDown}
     />
-  </div>
-</div>
-
-{/* Second Row: Meaning and Action Buttons */}
-<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-  <div>
-    <label className="block text-sm font-semibold text-gray-600">释义</label>
     <input
-      className="w-full border rounded p-2 mt-2"
+      className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
       placeholder="释义 (例: 谢谢)"
       value={form.meaning}
       onChange={e => setForm({ ...form, meaning: e.target.value })}
@@ -502,39 +496,65 @@ function exportWrongBookCSV() {
     />
   </div>
 
-  <div className="flex gap-4">
-    <button className="bg-blue-600 text-white text-sm px-5 py-1 rounded hover:bg-blue-700" onClick={addWord}>添加</button>
-    <button className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700" onClick={exportCSV}>导出 CSV</button>
-    <button className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700" onClick={exportBackup}>导出 (JSON)</button>
-    <button className="bg-white border rounded-lg text-sm px-3 py-1 flex items-center cursor-pointer hover:shadow" onClick={handleCSVImportClick}>导入 CSV</button>
-    <input
-      type="file"
-      accept=".csv"
-      ref={fileInputRef}
-      style={{ display: 'none' }}
-      onChange={(e) => {
-        if (e.target.files.length > 0) {
-          importCSVFile(e.target.files[0]);
-          e.target.value = ""; // 重置
-        }
-      }}
-    />
-    <button className="bg-white border rounded-lg text-sm px-3 py-1 flex items-center cursor-pointer hover:shadow" onClick={handleBackupImportClick}>导入(JSON)</button>
-    <input
-      type="file"
-      accept=".json"
-      ref={backupInputRef}
-      style={{ display: 'none' }}
-      onChange={(e) => {
-        if (e.target.files.length > 0) {
-          importBackup(e.target.files[0]);
-          e.target.value = ""; // 重置
-        }
-      }}
-    />
-  </div>
+<div className="flex flex-wrap gap-3 justify-center mt-4">
+  <button
+    className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-200 transition"
+    onClick={addWord}
+  >
+    添加
+  </button>
+  <button
+    className="bg-green-100 text-green-800 px-3 py-2 rounded-lg hover:bg-green-200 transition"
+    onClick={exportCSV}
+  >
+    导出 CSV
+  </button>
+  <button
+    className="bg-green-100 text-green-800 px-3 py-2 rounded-lg hover:bg-green-200 transition"
+    onClick={exportBackup}
+  >
+    导出 (JSON)
+  </button>
+  <button
+    className="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg hover:bg-orange-200 transition"
+    onClick={handleCSVImportClick}
+  >
+    导入 CSV
+  </button>
+  <input
+    type="file"
+    accept=".csv"
+    ref={fileInputRef}
+    style={{ display: 'none' }}
+    onChange={(e) => {
+      if (e.target.files.length > 0) {
+        importCSVFile(e.target.files[0]);
+        e.target.value = "";
+      }
+    }}
+  />
+  <button
+    className="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg hover:bg-orange-200 transition"
+    onClick={handleBackupImportClick}
+  >
+    导入 (JSON)
+  </button>
+  <input
+    type="file"
+    accept=".json"
+    ref={backupInputRef}
+    style={{ display: 'none' }}
+    onChange={(e) => {
+      if (e.target.files.length > 0) {
+        importBackup(e.target.files[0]);
+        e.target.value = "";
+      }
+    }}
+  />
+</div>
 
 </div>
+
 
 
         {/* Main */}
@@ -567,34 +587,39 @@ function exportWrongBookCSV() {
               单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）
             </h2>
             {/* Word List Table */}
-            <div className="overflow-x-auto bg-white shadow-md rounded-lg mb-6 max-h-[500px] overflow-y-auto">
-              <table className="min-w-full table-auto">
-                <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-left min-w-[100px] sm:min-w-[120px]">单词</th>
-                  <th className="px-4 py-2 text-left min-w-[100px] sm:min-w-[120px]">读音</th>
-                  <th className="px-4 py-2 text-left min-w-[120px] sm:min-w-[150px]">释义</th>
-                  <th className="px-4 py-2 text-left min-w-[120px] sm:min-w-[150px]">添加时间</th>
-                  <th className="px-4 py-2 text-left min-w-[120px] sm:min-w-[150px]">最新复习时间</th>
-                  <th className="px-4 py-2 text-left min-w-[80px] sm:min-w-[100px]">操作</th>
-                </tr>
-                </thead>
-                <tbody>
-                  {words.map(w => (
-                    <tr key={w.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-2">{w.word}</td>
-                      <td className="px-4 py-2">{w.reading}</td>
-                      <td className="px-4 py-2 whitespace-normal">{w.meaning}</td>
-                      <td className="px-4 py-2">{formatDate(w.addedAt)}</td>
-                      <td className="px-4 py-2">{formatDate(w.lastReviewedAt)}</td>
-                      <td className="px-4 py-2 flex gap-2">
-                        <button className="bg-yellow-200 text-black px-2 py-1 rounded hover:bg-yellow-300" onClick={() => openEditModal(w)}>编辑</button>
-                        <button className="bg-red-200 text-black px-2 py-1 rounded hover:bg-red-300" onClick={() => deleteWord(w.id)}>删除</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1">
+              {words.map(w => (
+            <div
+              key={w.id}
+              className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition-shadow relative group"
+            >
+              {/* 操作按钮区（默认隐藏，hover 显示） */}
+              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  className="p-1 rounded-full hover:bg-yellow-200"
+                  onClick={() => openEditModal(w)}
+                  title="编辑"
+                >
+                  ✏️
+                </button>
+                <button
+                  className="p-1 rounded-full hover:bg-red-200"
+                  onClick={() => deleteWord(w.id)}
+                  title="删除"
+                >
+                  🗑
+                </button>
+              </div>
+
+              {/* 单词信息 */}
+              <div className="text-lg font-bold text-gray-800">{w.word}</div>
+              <div className="text-sm text-blue-600 mb-2">{w.reading}</div>
+              <div className="text-gray-600 text-sm mb-2">释义: {w.meaning}</div>
+              <div className="text-xs text-gray-400">添加时间: {formatDate(w.addedAt)}</div>
+              <div className="text-xs text-gray-400">最新复习: {formatDate(w.lastReviewedAt)}</div>
+            </div>
+
+              ))}
             </div>
           </div>
       )}
