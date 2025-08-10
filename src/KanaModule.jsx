@@ -164,7 +164,7 @@ const handleCellClick = (rowIndex, colIndex) => {
       <div className="flex flex-wrap gap-3 items-center justify-center mb-4">
         <div className="inline-flex rounded-full bg-zinc-800/40 p-1">
           <button
-            className={`px-4 py-2 rounded-full font-medium transition ${mode === "hiragana" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${mode === "hiragana" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
             onClick={() => {
               setMode("hiragana");
               endPractice();
@@ -173,7 +173,7 @@ const handleCellClick = (rowIndex, colIndex) => {
             平假名
           </button>
           <button
-            className={`px-4 py-2 rounded-full font-medium transition ${mode === "katakana" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${mode === "katakana" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
             onClick={() =>  {
               setMode("katakana");
               endPractice();
@@ -182,7 +182,7 @@ const handleCellClick = (rowIndex, colIndex) => {
             片假名
           </button>
           <button
-            className={`px-4 py-2 rounded-full font-medium transition ${mode === "both" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${mode === "both" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
             onClick={() =>  {
               setMode("both");
               endPractice();
@@ -194,13 +194,13 @@ const handleCellClick = (rowIndex, colIndex) => {
 
         <div className="ml-2 inline-flex gap-2">
           <button
-            className="px-3 py-2 rounded-md bg-green-500 text-white hover:scale-105 transition"
+            className="px-4 py-2 rounded-md text-sm font-medium bg-green-500 text-white hover:scale-105 transition"
             onClick={startPractice}
           >
             开始练习
           </button>
           <button
-            className="px-3 py-2 rounded-md bg-red-500 text-white hover:scale-105 transition"
+            className="px-4 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:scale-105 transition"
             onClick={endPractice}
             title="结束练习并返回表格"
           >
