@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import WordModule from './WordModule';
 import GrammarModule from './GrammarModule';
+import KanaModule from './KanaModule';
 
 export default function App() {
   const [activeModule, setActiveModule] = useState('word'); // 'words' 或 'grammar'
@@ -44,15 +45,24 @@ export default function App() {
     >
       语法笔记
     </button>
+    <button
+      className={`px-6 py-2 rounded-full font-medium transition-all duration-300
+        ${activeModule === 'kana'
+          ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-pink-500/30'
+          : 'bg-transparent text-gray-300 hover:text-white hover:shadow-lg hover:shadow-pink-500/30'
+        }`}
+      onClick={() => setActiveModule('kana')}
+    >
+      五十音图
+    </button>
   </div>
 </div>
 
-
-
         {/* 模块内容 */}
         <div className="transition-opacity duration-500" key={activeModule}>
-          {activeModule === 'word' ? 
-          <WordModule /> : <GrammarModule />}
+          {activeModule === 'word' && <WordModule />}
+          {activeModule === 'grammar' && <GrammarModule />}
+          {activeModule === 'kana' && <KanaModule />}
         </div>
       </div>
   </div>
