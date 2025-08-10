@@ -39,6 +39,8 @@ export default function WordModule() {
   const [toast, setToast] = useState(null);
   const [pendingImports, setPendingImports] = useState([]);
   const [currentImportIndex, setCurrentImportIndex] = useState(0);
+const [hasStarted, setHasStarted] = useState(false);
+
 
   const showToast = (message, type = "info") => {
     setToast({ message, type });
@@ -399,7 +401,10 @@ const nextImport = () => {
   }
 };
 
+
+  // 当用户开始复习时调用
   function startReview(onlyWrong = false) {
+    setHasStarted(true);
     const pool = onlyWrong ? Object.values(wrongBook) : words;
     if (!pool || pool.length === 0) {
       showToast(onlyWrong ? '错题本为空' : '单词表为空','warning');
@@ -511,7 +516,8 @@ const nextImport = () => {
   return (
     <div>
       {/* 表单区域 */}
-      <div className="bg-white rounded-xl shadow p-4 mb-6">
+<div class="backdrop-blur-md bg-white/80 border border-gray-200 rounded-xl p-6 shadow-sm">
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <input
             ref={wordInputRef}
@@ -553,19 +559,22 @@ const nextImport = () => {
         </div>
       </div>
 
+      {/*主块区 单词列表 和 复习 */}
+<div class="backdrop-blur-md bg-white/80 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
+
       {/* 内部 Tab */}
-      <div className="flex mb-6 border-b">
-        <button className={`px-4 py-2 text-sm font-semibold ${activeTab === 'words' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`} onClick={() => switchTab('words')}>单词列表</button>
-        <button className={`px-4 py-2 text-sm font-semibold ${activeTab === 'review' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`} onClick={() => switchTab('review')}>复习</button>
+      <div className="flex border-b">
+        <button className={`px-4 py-2 font-semibold ${activeTab === 'words' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('words')}>单词列表</button>
+        <button className={`px-4 py-2 font-semibold ${activeTab === 'review' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('review')}>复习</button>
       </div>
 
       {/* 列表和复习 */}
       {activeTab === 'words' && (
-        <div className="bg-gray-50 rounded p-4">
+        <div className="rounded p-4">
           <h2 className="font-semibold text-lg mb-4">单词列表（共 {words.length} 个，错题 {Object.keys(wrongBook).length} 个）</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1 ">
             {words.map((w) => (
-              <div key={w.id} className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition-shadow relative group">
+              <div key={w.id} className="bg-white rounded-xl shadow p-4 border border-gray-400 hover:border-blue-400 hover:shadow-lg transition-shadow relative group">
                 <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button className="p-1 rounded-full hover:bg-yellow-200" onClick={() => openEditWordModal(w)}>✏️</button>
                   <button className="p-1 rounded-full hover:bg-red-200" onClick={() => deleteWord(w.id)}>🗑</button>
@@ -588,14 +597,23 @@ const nextImport = () => {
             {reviewOnlyWrong ? `❌ 复习范围：错题本（共 ${Object.keys(wrongBook).length} 个）` : `📚 复习范围：全部单词（共 ${words.length} 个）`}
           </div>
           <div className="flex gap-4 mb-4">
-            <button className="bg-purple-600 text-white px-4 py-2 rounded" onClick={() => startReview(false)}>复习全部</button>
-            <button className="bg-orange-500 text-white px-4 py-2 rounded" onClick={() => startReview(true)}>复习错题本</button>
-            <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={exportWrongBookCSV}>导出错题本</button>
+            <button className="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900" 
+              onClick={() => startReview(false)}>复习全部</button>
+            <button className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" 
+              onClick={() => startReview(true)}>复习错题本</button>
+            <button class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800"
+              onClick={exportWrongBookCSV}>
+              <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+              导出错题本
+              </span>
+            </button>
           </div>
 
           <div className="border rounded p-3 mt-6">
             {current && <div className="mb-2 text-sm text-gray-500">进度：{reviewIndex + 1} / {reviewList.length}</div>}
-            {!current && <div className="text-center text-lg text-green-600">🎉 已经完成本轮复习！</div>}
+            {hasStarted && reviewIndex >= reviewList.length && (
+              <div className="text-center text-lg text-green-600">🎉 已经完成本轮复习！</div>
+            )}
             <div className="text-xl font-bold mb-2">{current ? current.word : '点击开始复习'}</div>
             <div className="text-sm text-gray-600 mb-2">{current ? current.meaning : ''}</div>
             <input
@@ -616,22 +634,25 @@ const nextImport = () => {
               <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={checkAnswer}>检查</button>
               <button className="bg-gray-300 text-black px-4 py-2 rounded" onClick={nextReview}>下一题</button>
             </div>
-            {isCorrect && (
+            {hasStarted && reviewIndex < reviewList.length && current && isCorrect && (
               <div className={`mt-4 ${isCorrect === 'exact' ? 'text-green-500' : isCorrect === 'similar' ? 'text-yellow-500' : 'text-red-500'}`}>
                 {isCorrect === 'exact' && '✅ 正确'}
                 {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
                 {isCorrect === 'wrong' && '❌ 错误，请再试'}
+                
                 <div className="mt-2">
                   <strong>正确答案:</strong>
                   <div><strong>读音:</strong> {current.reading}</div>
                   <div><strong>释义:</strong> {current.meaning}</div>
                 </div>
+                
               </div>
             )}
           </div>
         </div>
       )}
 
+</div>
       {isEditing && <EditWordModal wordData={editWordData} onClose={closeEditWordModal} onSave={saveWordEdit} />}
       {isModalOpen && <ConfirmUpdateModal currentWord={wordToUpdate.currentWord} updatedWord={wordToUpdate.updatedWord} onConfirm={handleConfirmUpdate} onCancel={handleCancelUpdate} />}
       {toast && (
