@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Papa from 'papaparse';
 import EditGrammarModal from './components/EditGrammarModal';
 import Toast from './components/Toast';
+import ConfirmImportGrammarModal from './ConfirmImportGrammarModal';
 
 const STORAGE_KEY = 'jp_grammar_notes_v1';
 
@@ -17,6 +18,10 @@ export default function GrammarModule() {
   const [editingNote, setEditingNote] = useState(null);
   const [expandedIds, setExpandedIds] = useState(new Set()); // 存储已展开的笔记 id
   const [toast, setToast] = useState(null);
+const [pendingImports, setPendingImports] = useState([]);
+const [currentImportIndex, setCurrentImportIndex] = useState(0);
+const [applyToAll, setApplyToAll] = useState(null); // 'coverAll' | 'skipAll'
+
 
   const showToast = (message, type = "info") => {
     setToast({ message, type });
@@ -114,7 +119,6 @@ export default function GrammarModule() {
     URL.revokeObjectURL(url);
   };
 
-  // 导入 CSV
   const importCSV = (file) => {
     Papa.parse(file, {
       header: true,
@@ -127,13 +131,12 @@ export default function GrammarModule() {
           example: r.example ? r.example.trim() : '',
           addedAt: r.addedAt ? r.addedAt.trim() : new Date().toISOString(),
         })).filter(d => d.title && d.content);
-        setNotes((prev) => [...data, ...prev]);
-        showToast('CSV 导入成功',"success");
+
+        handleImportWithCheck(data);
       },
     });
   };
 
-  // 导入 JSON
   const importJSON = (file) => {
     const fr = new FileReader();
     fr.onload = (e) => {
@@ -142,7 +145,6 @@ export default function GrammarModule() {
         if (Array.isArray(data)) {
           const mapped = data
             .map((n) => ({
-              ...n,
               id: uid(),
               title: (n.title || '').trim(),
               content: (n.content || '').trim(),
@@ -150,17 +152,68 @@ export default function GrammarModule() {
               addedAt: n.addedAt || new Date().toISOString(),
             }))
             .filter(n => n.title && n.content);
-          setNotes((prev) => [...mapped, ...prev]);
-          showToast('导入成功',"success");
+
+          handleImportWithCheck(mapped);
         } else {
-          showToast('JSON 格式不正确', "warning");
+          showToast('JSON 格式不正确', 'error');
         }
       } catch (err) {
-        showToast('解析 JSON 失败', "warning");
+        showToast('解析 JSON 失败', 'error');
       }
     };
     fr.readAsText(file, 'utf-8');
   };
+
+const handleImportWithCheck = (data) => {
+  const existingTitles = new Set(notes.map(n => n.title));
+  const duplicates = data.filter(n => existingTitles.has(n.title));
+  const uniques = data.filter(n => !existingTitles.has(n.title));
+
+  // 先导入不重复的
+  if (uniques.length > 0) {
+    setNotes(prev => [...uniques, ...prev]);
+    showToast(`已导入 ${uniques.length} 条新笔记`, 'success');
+  }
+
+  if (duplicates.length > 0) {
+    setPendingImports(duplicates);
+    setCurrentImportIndex(0);
+    setApplyToAll(null);
+  }
+};
+
+const handleCover = () => {
+  const noteToImport = pendingImports[currentImportIndex];
+  setNotes(prev =>
+    prev.map(n => (n.title === noteToImport.title ? noteToImport : n))
+  );
+  nextImport();
+};
+
+const handleSkip = () => {
+  nextImport();
+};
+
+const handleCoverAll = () => {
+  setNotes(prev => {
+    const others = prev.filter(n => !pendingImports.some(pi => pi.title === n.title));
+    return [...pendingImports, ...others];
+  });
+  setPendingImports([]);
+};
+
+const handleSkipAll = () => {
+  setPendingImports([]);
+};
+
+const nextImport = () => {
+  if (currentImportIndex + 1 < pendingImports.length) {
+    setCurrentImportIndex(currentImportIndex + 1);
+  } else {
+    setPendingImports([]);
+  }
+};
+
 
   // 切换某条的展开状态
   const toggleExpand = (id) => {
@@ -340,6 +393,16 @@ export default function GrammarModule() {
           message={toast.message}
           type={toast.type}
           onClose={() => setToast(null)}
+        />
+      )}
+
+      {pendingImports.length > 0 && (
+        <ConfirmImportGrammarModal
+          note={pendingImports[currentImportIndex]}
+          onCover={handleCover}
+          onSkip={handleSkip}
+          onCoverAll={handleCoverAll}
+          onSkipAll={handleSkipAll}
         />
       )}
     </div>
