@@ -34,6 +34,9 @@ export default function App() {
   const [wordToUpdate, setWordToUpdate] = useState(null);
   const [importing, setImporting] = useState(false);
   const [overwriteAll, setOverwriteAll] = useState(false);  // State to track if all words should be overwritten
+  // 在 state 区域加：
+const [reviewList, setReviewList] = useState([]);
+const [reviewIndex, setReviewIndex] = useState(0);
 
 const handleCSVImportClick = () => {
   if (fileInputRef.current) fileInputRef.current.click();
@@ -245,30 +248,32 @@ const handleBackupImportClick = () => {
 
   // review logic: show word only, check reading
   // 启动复习
-  const startReview = (onlyWrong = false) => {
-    const pool = onlyWrong ? Object.values(wrongBook) : words;
-    if (!pool || pool.length === 0) {
-      showAlert(onlyWrong ? '错题本为空' : '单词表为空');
-      return;
-    }
-    setReviewOnlyWrong(onlyWrong); // 记住当前模式
-    setMode('review');
-    setAnswer('');
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    setCurrent(pick);
-    setIsCorrect(null);
-  };
+const startReview = (onlyWrong = false) => {
+  const pool = onlyWrong ? Object.values(wrongBook) : words;
+  if (!pool || pool.length === 0) {
+    showAlert(onlyWrong ? '错题本为空' : '单词表为空');
+    return;
+  }
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  setReviewList(shuffled);
+  setReviewIndex(0);
+  setCurrent(shuffled[0]);
+  setReviewOnlyWrong(onlyWrong);
+  setMode('review');
+  setAnswer('');
+  setIsCorrect(null);
+};
 
 // 修改 nextReview()
 function nextReview() {
-  const pool = reviewOnlyWrong ? Object.values(wrongBook) : words;
-  if (!pool || pool.length === 0) {
+  if (reviewIndex + 1 >= reviewList.length) {
     setCurrent(null);
-    setMode('list');
+    showAlert('🎉 恭喜，已经完成本轮复习！');
     return;
   }
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  setCurrent(pick);
+  const nextIdx = reviewIndex + 1;
+  setReviewIndex(nextIdx);
+  setCurrent(reviewList[nextIdx]);
   setAnswer('');
   setIsCorrect(null);
 }
@@ -408,6 +413,40 @@ function formatDate(dateString) {
     second: '2-digit'
   });
 }
+
+function exportWrongBookCSV() {
+  const wrongList = Object.values(wrongBook);
+  if (!wrongList || wrongList.length === 0) {
+    showAlert('错题本为空');
+    return;
+  }
+
+  const rows = [
+    ['word', 'reading', 'meaning', 'addedAt', 'lastReviewedAt'],
+    ...wrongList.map(w => [
+      w.word,
+      w.reading,
+      w.meaning,
+      w.addedAt || '',
+      w.lastReviewedAt || '',
+    ]),
+  ];
+
+  const csv = rows
+    .map(r => r.map(c => `"${(c || '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const csvArray = new TextEncoder().encode(csv);
+  const blob = new Blob([bom, csvArray], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `jp_wrongbook_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 
 
   // UI render
@@ -572,9 +611,20 @@ function formatDate(dateString) {
             <div className="flex gap-4 mb-4">
                   <button className="bg-purple-600 text-white px-4 py-2 rounded" onClick={() => startReview(false)}>复习全部</button>
                   <button className="bg-orange-500 text-white px-4 py-2 rounded" onClick={() => startReview(true)}>复习错题本</button>
+                  <button className="bg-red-500 text-white px-4 py-2 rounded"     onClick={exportWrongBookCSV}>导出错题本</button>
             </div>
 
             <div className="border rounded p-3 mt-6">
+              {current && (
+                <div className="mb-2 text-sm text-gray-500">
+                  进度：{reviewIndex + 1} / {reviewList.length}
+                </div>
+              )}
+              {!current && (
+                <div className="text-center text-lg text-green-600">
+                  🎉 已经完成本轮复习！
+                </div>
+              )}
               <div className="text-xl font-bold mb-2">{current ? current.word : '点击开始复习'}</div>
               <div className="text-sm text-gray-600 mb-2">{current ? current.meaning : ''}</div>
               <input 
@@ -582,7 +632,6 @@ function formatDate(dateString) {
                 placeholder="输入读音并回车或点击检查"
                 value={answer}
                 onChange={e => setAnswer(e.target.value)}
-                // 修改输入框回车逻辑
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     checkAnswer();
