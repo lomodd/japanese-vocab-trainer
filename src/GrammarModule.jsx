@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Papa from 'papaparse';
 import EditGrammarModal from './components/EditGrammarModal';
 import Toast from './components/Toast';
-import ConfirmImportGrammarModal from './ConfirmImportGrammarModal';
+import ConfirmImportGrammarModal from './components/ConfirmImportGrammarModal';
 
 const STORAGE_KEY = 'jp_grammar_notes_v1';
 

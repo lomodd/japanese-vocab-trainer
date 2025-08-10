@@ -3,7 +3,7 @@ import React from 'react';
 
 const ConfirmUpdateModal = ({ currentWord, updatedWord, onConfirm, onCancel }) => {
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
+    <div className="fixed inset-0 bg-gray-500/30  flex justify-center items-center z-50">
       <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
         <h3 className="text-xl font-semibold mb-4">确认更新单词</h3>
         <div className="mb-4">

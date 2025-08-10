@@ -2,6 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import Papa from 'papaparse';
 import EditWordModal from './components/EditWordModal';
 import ConfirmUpdateModal from './components/ConfirmUpdateModal';
+import ConfirmImportWordModal from './components/ConfirmImportWordModal';
+import Toast from './components/Toast';
+
 
 const STORAGE_KEY = 'jp_vocab_v1';
 const WRONG_KEY = 'jp_vocab_wrong_v1';
@@ -23,7 +26,6 @@ export default function WordModule() {
   const dailyGoalRef = useRef(20);
   const [isCorrect, setIsCorrect] = useState(null);
   const [reviewOnlyWrong, setReviewOnlyWrong] = useState(false);
-  const [toast, setToast] = useState(null);
   const toastTimeoutRef = useRef(null);
   const wordInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -34,10 +36,12 @@ export default function WordModule() {
   const [overwriteAll, setOverwriteAll] = useState(false);
   const [reviewList, setReviewList] = useState([]);
   const [reviewIndex, setReviewIndex] = useState(0);
+  const [toast, setToast] = useState(null);
+  const [pendingImports, setPendingImports] = useState([]);
+  const [currentImportIndex, setCurrentImportIndex] = useState(0);
 
-  const showAlert = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (message, type = "info") => {
+    setToast({ message, type });
   };
 
   useEffect(() => {
@@ -77,7 +81,7 @@ export default function WordModule() {
 
   const addWord = () => {
     if (!form.word.trim() || !form.reading.trim()) {
-      showAlert('请输入单词和读音');
+      showToast('请输入单词和读音','error');
       return;
     }
 
@@ -98,7 +102,7 @@ export default function WordModule() {
       };
 
       setWords((prev) => [newWord, ...prev]);
-      showAlert(`单词 "${form.word}" 已添加`);
+      showToast(`单词 "${form.word}" 已添加`,'success');
     }
 
     setForm({ word: '', reading: '', meaning: '' });
@@ -115,7 +119,7 @@ export default function WordModule() {
           : w
       )
     );
-    showAlert(`单词 "${form.word}" 已更新`);
+    showToast(`单词 "${wordToUpdate.updatedWord.word}" 已更新`,'success');
     setIsModalOpen(false);
     setForm({ word: '', reading: '', meaning: '' });
   };
@@ -154,6 +158,7 @@ export default function WordModule() {
       }
       return copy;
     });
+    showToast(`编辑成功，单词 "${updatedWord.word}" 已更新`,'success');
   }
 
   const handleKeyDown = (e) => {
@@ -179,7 +184,7 @@ export default function WordModule() {
 
   function exportCSV() {
     if (!words || words.length === 0) {
-      showAlert('单词表为空');
+      showToast('单词表为空','error');
       return;
     }
 
@@ -248,7 +253,7 @@ export default function WordModule() {
                   w.word === newWord.word ? { ...w, ...newWord } : w
                 )
               );
-              showAlert(`单词 "${newWord.word}" 已更新`);
+              showToast(`单词 "${newWord.word}" 已更新`,'success');
             } else {
               const confirmUpdate = window.prompt(
                 `单词 "${newWord.word}" 已存在，是否更新？ 直接回车更新，输入1 更新所有`
@@ -259,11 +264,11 @@ export default function WordModule() {
                     w.word === newWord.word ? { ...w, ...newWord } : w
                   )
                 );
-                showAlert(`单词 "${newWord.word}" 已更新`);
+                showToast(`单词 "${newWord.word}" 已更新`,'success');
               } else if (confirmUpdate == 1) {
                 overwriteAllPrompt = true;
                 setOverwriteAll(true);
-                showAlert(`本次已经存在单词都将被更新`);
+                showToast(`本次已经存在单词都将被更新`,'success');
               }
             }
           } else {
@@ -296,18 +301,108 @@ export default function WordModule() {
         }
         if (data.wrongBook) setWrongBook((prev) => ({ ...prev, ...data.wrongBook }));
         if (data.dailyStats) setDailyStats((prev) => ({ ...prev, ...data.dailyStats }));
-        showAlert('导入备份成功');
+        showToast('导入备份成功','success');
       } catch (err) {
-        showAlert('备份文件格式错误');
+        showToast('备份文件格式错误','error');
       }
     };
     fr.readAsText(file, 'utf-8');
   }
 
+
+const handleImportWithCheck = (data) => {
+  const existingWords = new Set(words.map(w => w.word));
+  const duplicates = data.filter(w => existingWords.has(w.word));
+  const uniques = data.filter(w => !existingWords.has(w.word));
+
+  if (uniques.length > 0) {
+    setWords(prev => [...uniques, ...prev]);
+    showToast(`已导入 ${uniques.length} 个新单词`, 'success');
+  }
+
+  if (duplicates.length > 0) {
+    setPendingImports(duplicates);
+    setCurrentImportIndex(0);
+  }
+};
+
+const importCSV = (file) => {
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      const data = results.data.map(r => ({
+        id: uid(),
+        word: (r.word || '').trim(),
+        reading: (r.reading || '').trim(),
+        meaning: (r.meaning || '').trim(),
+        addedAt: r.addedAt || new Date().toISOString(),
+      })).filter(w => w.word && w.meaning);
+      handleImportWithCheck(data);
+    }
+  });
+};
+
+const importJSON = (file) => {
+  const fr = new FileReader();
+  fr.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        const mapped = data.map(w => ({
+          id: uid(),
+          word: (w.word || '').trim(),
+          reading: (w.reading || '').trim(),
+          meaning: (w.meaning || '').trim(),
+          addedAt: w.addedAt || new Date().toISOString(),
+        })).filter(w => w.word && w.meaning);
+        handleImportWithCheck(mapped);
+      } else {
+        showToast("JSON 格式不正确", "error");
+      }
+    } catch {
+      showToast("解析 JSON 失败", "error");
+    }
+  };
+  fr.readAsText(file, 'utf-8');
+};
+ 
+const handleCover = () => {
+  const wordToImport = pendingImports[currentImportIndex];
+  setWords(prev =>
+    prev.map(w => (w.word === wordToImport.word ? wordToImport : w))
+  );
+  nextImport();
+};
+
+const handleSkip = () => {
+  nextImport();
+};
+
+const handleCoverAll = () => {
+  setWords(prev => {
+    const others = prev.filter(w => !pendingImports.some(pi => pi.word === w.word));
+    return [...pendingImports, ...others];
+  });
+  setPendingImports([]);
+};
+
+const handleSkipAll = () => {
+  setPendingImports([]);
+};
+
+const nextImport = () => {
+  if (currentImportIndex + 1 < pendingImports.length) {
+    setCurrentImportIndex(currentImportIndex + 1);
+  } else {
+    setPendingImports([]);
+  }
+};
+
   function startReview(onlyWrong = false) {
     const pool = onlyWrong ? Object.values(wrongBook) : words;
     if (!pool || pool.length === 0) {
-      showAlert(onlyWrong ? '错题本为空' : '单词表为空');
+      showToast(onlyWrong ? '错题本为空' : '单词表为空','warning');
       return;
     }
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -322,7 +417,7 @@ export default function WordModule() {
   function nextReview() {
     if (reviewIndex + 1 >= reviewList.length) {
       setCurrent(null);
-      showAlert('🎉 恭喜，已经完成本轮复习！');
+      showToast('🎉 恭喜，已经完成本轮复习！', 'success');
       return;
     }
     const nextIdx = reviewIndex + 1;
@@ -379,7 +474,7 @@ export default function WordModule() {
   function exportWrongBookCSV() {
     const wrongList = Object.values(wrongBook);
     if (!wrongList || wrongList.length === 0) {
-      showAlert('错题本为空');
+      showToast('错题本为空','error');
       return;
     }
 
@@ -449,12 +544,12 @@ export default function WordModule() {
             onClick={exportCSV}>导出 CSV</button>  
           <button className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
             onClick={() => fileInputRef.current.click()}>导入 CSV</button>
-          <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importCSVFile(e.target.files[0]); e.target.value = ""; } }} />
+          <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importCSV(e.target.files[0]); e.target.value = ""; } }} />
           <button className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
            onClick={exportBackup}>导出 (JSON)</button>
           <button className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700" 
             onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
-          <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importBackup(e.target.files[0]); e.target.value = ""; } }} />
+          <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importJSON(e.target.files[0]); e.target.value = ""; } }} />
         </div>
       </div>
 
@@ -538,8 +633,25 @@ export default function WordModule() {
       )}
 
       {isEditing && <EditWordModal wordData={editWordData} onClose={closeEditWordModal} onSave={saveWordEdit} />}
-      {toast && <div className="toast">{toast}</div>}
       {isModalOpen && <ConfirmUpdateModal currentWord={wordToUpdate.currentWord} updatedWord={wordToUpdate.updatedWord} onConfirm={handleConfirmUpdate} onCancel={handleCancelUpdate} />}
+      {toast && (
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast(null)}
+      />
+    )}
+
+    {pendingImports.length > 0 && (
+      <ConfirmImportWordModal
+        word={pendingImports[currentImportIndex]}
+        onCover={handleCover}
+        onSkip={handleSkip}
+        onCoverAll={handleCoverAll}
+        onSkipAll={handleSkipAll}
+      />
+    )}
+
     </div>
   );
 }
