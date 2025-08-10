@@ -359,7 +359,14 @@ const nextImport = () => {
                     title="全屏查看"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4m12 0v-4h-4" />
+                      {/* 左上角 */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4" />
+                      {/* 右上角 */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 8V4h-4" />
+                      {/* 左下角 */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v4h4" />
+                      {/* 右下角 */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 16v4h-4" />
                     </svg>
                   </button>
 
@@ -470,23 +477,28 @@ const nextImport = () => {
 
       {viewingNote && (
       <div className="fixed inset-0 bg-gray-500/30 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
-          <button
-            className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-            onClick={() => setViewingNote(null)}
-          >
-            ✖
-          </button>
-          <h2 className="text-2xl font-bold text-blue-700 mb-4">{viewingNote.title}</h2>
-          <div className="text-gray-700 whitespace-pre-wrap mb-4">{viewingNote.content}</div>
-          {viewingNote.example && (
-            <div className="border-l-4 border-blue-400 pl-3 text-gray-600 italic whitespace-pre-wrap">
-              例句: {viewingNote.example}
-            </div>
-          )}
-          <div className="text-xs text-gray-400 mt-4">
-            添加时间: {formatDate(viewingNote.addedAt)}
-          </div>
+        <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] relative">
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setViewingNote(null)}
+              className="absolute -top-4 -right-4 bg-white hover:bg-blue-50 text-blue-500 hover:text-blue-600 rounded-full w-10 h-10 flex items-center justify-center shadow-md border border-gray-200 transition text-2xl leading-none"
+              aria-label="关闭"
+            >
+              ✖
+            </button>
+
+            <div className="overflow-y-auto max-h-[80vh] pr-2">
+              <h2 className="text-2xl font-bold text-blue-700 mb-4">{viewingNote.title}</h2>
+              <div className="text-gray-700 whitespace-pre-wrap mb-4">{viewingNote.content}</div>
+              {viewingNote.example && (
+                <div className="border-l-4 border-blue-400 pl-3 text-gray-600 italic whitespace-pre-wrap">
+                  例句: {viewingNote.example}
+                </div>
+              )}
+              <div className="text-xs text-gray-400 mt-4">
+                添加时间: {formatDate(viewingNote.addedAt)}
+              </div>
+        </div>
         </div>
       </div>
     )}
