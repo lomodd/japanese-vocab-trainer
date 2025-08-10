@@ -124,7 +124,7 @@ const handleBackupImportClick = () => {
   // Confirm the update and update the word
   const handleConfirmUpdate = () => {
     setWords(prevWords =>
-      prevWords.map(w => w.word === wordToUpdate.currentWord.word ? { ...w, ...form } : w)
+      prevWords.map(w => w.word === wordToUpdate.currentWord.word ? { ...w, ...wordToUpdate.updatedWord } : w)
     );
     showAlert(`单词 "${form.word}" 已更新`);
     setIsModalOpen(false);
