@@ -1,10 +1,15 @@
+// src/KanaModule.jsx
 import React, { useMemo, useState } from "react";
+import useReviewProgress from "./hooks/useReviewProgress";
+import ConfirmModal from "./components/ConfirmModal";
 
 /**
- * KanaModule.jsx
- * - 完整平假名 / 片假名对象数据（kana + roma）
- * - 表格视图（带行/列标题 & roma 小注）
- * - 练习视图（start/next/end/check）
+ * 重构版 KanaModule
+ * - 按 mode 为每个模式单独缓存（key 包含 mode）
+ * - 题库从原始数据直接生成（避免闭包 / useMemo 依赖问题）
+ * - 恢复缓存时做越界保护
+ * - 自定义 ConfirmModal 用于「继续上次练习」
+ * - 回车逻辑：第一次 check 显示结果；若已答对 (isAnswered true)，再按回车会再判一次 -> 对则跳题，错则更新提示并留在题目
  */
 
 const colHeaders = ["", "あ段", "い段", "う段", "え段", "お段"];
@@ -41,122 +46,205 @@ const katakanaData = [
   [{ kana: "ン", roma: "n" }, { kana: "", roma: "" }, { kana: "", roma: "" }, { kana: "", roma: "" }, { kana: "", roma: "" }]
 ];
 
+function flattenForMode(mode) {
+  if (mode === "hiragana") {
+    return hiraganaData.flat().filter(i => i && i.kana).map(i => ({ kana: i.kana, roma: i.roma }));
+  } else if (mode === "katakana") {
+    return katakanaData.flat().filter(i => i && i.kana).map(i => ({ kana: i.kana, roma: i.roma }));
+  } else {
+    // both: 合并显示，保留 roma
+    return hiraganaData.flat().map((hira, idx) => {
+      const kata = katakanaData.flat()[idx] || { kana: "" };
+      return { kana: `${hira.kana} / ${kata.kana}`, roma: hira.roma };
+    }).filter(i => i && i.kana);
+  }
+}
+
 export default function KanaModule() {
-  const [mode, setMode] = useState("hiragana"); 
-  // 可选值: "hiragana", "katakana", "both"
+  const [mode, setMode] = useState("hiragana"); // "hiragana" | "katakana" | "both"
+  const storageKey = `kana_review:${mode}`; // per-mode cache key
+const initialData = useMemo(() => ({
+  practiceList: [],
+  practiceIndex: 0,
+  mode
+}), [mode]);
 
-  const displayData = useMemo(() => {
-    if (mode === "hiragana") return hiraganaData;
-    if (mode === "katakana") return katakanaData;
-    if (mode === "both") {
-      // both 模式合并两个数组，保证结构对齐
-      return hiraganaData.map((row, rowIndex) =>
-        row.map((hira, colIndex) => ({
-          hira: hira.kana,
-          kata: katakanaData[rowIndex][colIndex].kana,
-          roma: hira.roma
-        }))
-      );
-    }
-  }, [mode]);
+const { progress, updateProgress, resetProgress } = useReviewProgress(storageKey, initialData);
 
 
-  // 视图：table | practice
-  const [view, setView] = useState("table");
+  // local state (init from progress safely)
+  const [practiceList, setPracticeList] = useState(() => Array.isArray(progress.practiceList) ? progress.practiceList : []);
+  const [practiceIndex, setPracticeIndex] = useState(() => Number.isInteger(progress.practiceIndex) ? progress.practiceIndex : 0);
+  const [isAnswered, setIsAnswered] = useState(false);
 
-  // 练习相关状态（**注意**：不要遗漏 setPracticeList）
-  const [practiceList, setPracticeList] = useState([]); // 扁平化后的练习数组 [{kana, roma}, ...]
-  const [practiceIndex, setPracticeIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState("");
   const [hasStarted, setHasStarted] = useState(false);
 
+  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
 
-  const current = practiceList[practiceIndex] || null;
+  // current safe
+  const current = (practiceList && practiceList[practiceIndex]) ? practiceList[practiceIndex] : null;
 
-  // 开始练习：扁平化 displayData -> practiceList
-  const startPractice = () => {
-    const flat = displayData.flat().filter(item => item && item.kana);
-    if (!flat.length) {
-      setFeedback("没有可练习的假名");
-      return;
+  // startPractice: 如果本 mode 有缓存且未完成，就提示是否继续；否则（或选择重新开始）用当前 mode 生成新题库
+const startPractice = () => {
+    // 空题保护
+    const flatTest = flattenForMode(mode);
+    if (!flatTest.length) {
+        setFeedback('⚠ 当前模式没有可练习的假名');
+        return;
     }
-    setPracticeList(flat);
-    setPracticeIndex(0);
-    setAnswer("");
-    setFeedback("");
-    setHasStarted(true);
+  // 直接从 progress（当前 mode 对应 key）里取缓存
+  const cachedList = Array.isArray(progress.practiceList) ? progress.practiceList : [];
+  const cachedIndex = Number.isInteger(progress.practiceIndex) ? progress.practiceIndex : 0;
+
+  const hasUnfinished = cachedList.length > 0 && cachedIndex < cachedList.length;
+
+  if (hasUnfinished) {
+    setShowContinuePrompt(true);
+    return;
+  }
+
+  // 否则全新开始
+  const flat = flattenForMode(mode);
+  if (!flat.length) {
+    setFeedback("没有可练习的假名");
+    return;
+  }
+
+  setPracticeList(flat);
+  setPracticeIndex(0);
+  setAnswer("");
+  setFeedback("");
+  setIsAnswered(false);
+  setHasStarted(true);
+  updateProgress({practiceList: flat, practiceIndex: 0, mode});
+  setViewToPractice();
+};
+
+
+  // helper to switch to practice view
+  const setViewToPractice = () => {
+    // 保持兼容旧结构（你的 UI 里用 view 控制 table/practice）
     setView("practice");
   };
 
+  // ConfirmModal 的「继续」：恢复缓存（安全恢复）
+  const restoreFromCache = () => {
+    const cachedList = Array.isArray(progress.practiceList) ? progress.practiceList : [];
+    let cachedIndex = Number.isInteger(progress.practiceIndex) ? progress.practiceIndex : 0;
+
+    // 越界保护
+    if (!cachedList.length) {
+      cachedIndex = 0;
+    } else if (cachedIndex >= cachedList.length) {
+      cachedIndex = 0;
+    }
+
+    setPracticeList(cachedList);
+    setPracticeIndex(cachedIndex);
+    setAnswer("");
+    setFeedback("");
+    setIsAnswered(false);
+    setHasStarted(true);
+    setViewToPractice();
+  };
+
+  // checkAnswer: 只在答对时把 isAnswered 设为 true（你之前修正过的逻辑）
   const checkAnswer = () => {
     if (!current) return;
     const norm = (s) => (s || "").trim().toLowerCase();
     if (norm(answer) === (current.roma || "").toLowerCase()) {
       setFeedback("✅ 正确");
+      setIsAnswered(true);
     } else {
       setFeedback(`❌ 错误，正确读音是：${current.roma || "（无）"}`);
+      setIsAnswered(false);
     }
   };
 
+  // nextPractice: 只有在切题时更新缓存进度
   const nextPractice = () => {
-    if (!practiceList.length) return;
+    if (!practiceList || !practiceList.length) return;
     if (practiceIndex + 1 < practiceList.length) {
-      setPracticeIndex(practiceIndex + 1);
+      const nextIdx = practiceIndex + 1;
+      setPracticeIndex(nextIdx);
+      updateProgress && updateProgress({practiceIndex: nextIdx, mode});
       setAnswer("");
       setFeedback("");
+      setIsAnswered(false);
       setHasStarted(true);
     } else {
-      // 已到最后一题
+      // 已到最后
       setFeedback("🎉 已经完成本轮练习！");
       setHasStarted(false);
-      // 保留最后一题的 current，用户可以查看或点击「结束练习」返回表格
+      setIsAnswered(false);
     }
   };
 
+  // endPractice: 清 UI 状态并清掉缓存（你想要保留缓存也可以只清 UI，不清 cache）
   const endPractice = () => {
     setView("table");
     setPracticeList([]);
     setPracticeIndex(0);
+    resetProgress();
     setAnswer("");
     setFeedback("");
     setHasStarted(false);
+    setIsAnswered(false);
   };
 
-  // 在组件里定义一个方法
-const handleCellClick = (rowIndex, colIndex) => {
-  const hira = hiraganaData[rowIndex][colIndex];
-  const kata = katakanaData[rowIndex][colIndex];
+  // 点击表格格子进入某题（直接使用当前 mode 的题库）
+  const handleCellClick = (rowIndex, colIndex) => {
+    const hira = hiraganaData[rowIndex][colIndex];
+    const kata = katakanaData[rowIndex][colIndex];
 
-  let kanaToMatch = "";
-  if (mode === "hiragana") kanaToMatch = hira.kana;
-  if (mode === "katakana") kanaToMatch = kata.kana;
-  if (mode === "both") kanaToMatch = `${hira.kana} / ${kata.kana}`;
+    let kanaToMatch = "";
+    if (mode === "hiragana") kanaToMatch = hira.kana;
+    if (mode === "katakana") kanaToMatch = kata.kana;
+    if (mode === "both") kanaToMatch = `${hira.kana} / ${kata.kana}`;
 
-  if (!kanaToMatch.trim()) return;
+    if (!kanaToMatch.trim()) return;
 
-  // 根据当前模式构造扁平化列表
-  let flat = [];
-  if (mode === "both") {
-    flat = displayData.flat().map(i => ({
-      kana: `${i.hira} / ${i.kata}`,
-      roma: i.roma
-    }));
-  } else {
-    flat = displayData.flat();
-  }
+    // 根据当前 mode 构造扁平化列表（与 startPractice 一致）
+    const flat = flattenForMode(mode);
+    const idx = flat.findIndex(i => i.kana === kanaToMatch);
+    if (idx >= 0) {
+      setPracticeList(flat);
+      setPracticeIndex(idx);
+      updateProgress({practiceList: flat, practiceIndex: idx, mode});
+      setAnswer("");
+      setFeedback("");
+      setIsAnswered(false);
+      setHasStarted(true);
+      setViewToPractice();
+    }
+  };
 
-  const idx = flat.findIndex(i => i.kana === kanaToMatch);
-  if (idx >= 0) {
-    setPracticeList(flat);
-    setPracticeIndex(idx);
+  // UI 控制 view（table/practice）
+  const [view, setView] = useState("table");
+
+  // 切换模式按钮时直接切换 mode（缓存是 per-mode 的，因此不必 resetProgress）
+  const changeMode = (newMode) => {
+    if (newMode === mode) return;
+    setMode(newMode);
+    // 切换模式时重置UI状态但不清缓存
+    setPracticeList([]);
+    setPracticeIndex(0);
+    setAnswer('');
+    setFeedback('');
+    setIsAnswered(false);
+    setView('table');
+    // 切换 mode 时，不要去读取别的 mode 的缓存（useReviewProgress keyed by mode）
+    // 为了避免 UI 冲突，先清当前 UI 练习状态
+    setPracticeList([]);
+    setPracticeIndex(0);
     setAnswer("");
     setFeedback("");
-    setHasStarted(true);
-    setView("practice");
-  }
-};
-
+    setIsAnswered(false);
+    setHasStarted(false);
+    setView("table");
+  };
 
   return (
     <div className="p-4">
@@ -165,28 +253,19 @@ const handleCellClick = (rowIndex, colIndex) => {
         <div className="inline-flex rounded-full bg-zinc-800/40 p-1">
           <button
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${mode === "hiragana" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
-            onClick={() => {
-              setMode("hiragana");
-              endPractice();
-            }}
+            onClick={() => changeMode("hiragana")}
           >
             平假名
           </button>
           <button
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${mode === "katakana" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
-            onClick={() =>  {
-              setMode("katakana");
-              endPractice();
-            }}
+            onClick={() => changeMode("katakana")}
           >
             片假名
           </button>
           <button
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${mode === "both" ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow" : "text-gray-300 hover:text-white"}`}
-            onClick={() =>  {
-              setMode("both");
-              endPractice();
-            }}
+            onClick={() => changeMode("both")}
           >
             合并显示
           </button>
@@ -222,49 +301,47 @@ const handleCellClick = (rowIndex, colIndex) => {
                 ))}
               </tr>
             </thead>
-<tbody>
-  {hiraganaData.map((row, rowIndex) => (
-    <tr key={rowIndex}>
-      <th className="py-4 px-2 text-center font-medium bg-gradient-to-r from-blue-50 to-blue-100 border border-gray-200">
-        {rowHeaders[rowIndex]}
-      </th>
-      {row.map((item, colIndex) => {
-        const hira = hiraganaData[rowIndex][colIndex];
-        const kata = katakanaData[rowIndex][colIndex];
+            <tbody>
+              {hiraganaData.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  <th className="py-4 px-2 text-center font-medium bg-gradient-to-r from-blue-50 to-blue-100 border border-gray-200">
+                    {rowHeaders[rowIndex]}
+                  </th>
+                  {row.map((item, colIndex) => {
+                    const hira = hiraganaData[rowIndex][colIndex];
+                    const kata = katakanaData[rowIndex][colIndex];
 
-        return (
-            <td key={colIndex}
-                className={`w-15 h-15 text-center border border-gray-200 bg-white hover:bg-blue-50 transition-all duration-150 hover:scale-105 cursor-default`}
-                // 点击某个假名也可以直接进入练习（选中那题）
-                onClick={() => handleCellClick(rowIndex, colIndex)}
-          >
-            {mode === "hiragana" && (
-              <div className="flex flex-col items-center justify-center">
-                <span className="text-xl font-bold">{hira.kana}</span>
-                <span className="text-xs text-gray-500">{hira.roma}</span>
-              </div>
-            )}
+                    return (
+                      <td key={colIndex}
+                        className={`w-15 h-15 text-center border border-gray-200 bg-white hover:bg-blue-50 transition-all duration-150 hover:scale-105 cursor-default`}
+                        onClick={() => handleCellClick(rowIndex, colIndex)}
+                      >
+                        {mode === "hiragana" && (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-xl font-bold">{hira.kana}</span>
+                            <span className="text-xs text-gray-500">{hira.roma}</span>
+                          </div>
+                        )}
 
-            {mode === "katakana" && (
-              <div className="flex flex-col items-center justify-center">
-                <span className="text-xl font-bold">{kata.kana}</span>
-                <span className="text-xs text-gray-500">{kata.roma}</span>
-              </div>
-            )}
+                        {mode === "katakana" && (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-xl font-bold">{kata.kana}</span>
+                            <span className="text-xs text-gray-500">{kata.roma}</span>
+                          </div>
+                        )}
 
-            {mode === "both" && (
-              <div className="flex flex-col items-center justify-center">
-                <span className="text-lg font-bold">{hira.kana} / {kata.kana}</span>
-                <span className="text-xs text-gray-500">{hira.roma}</span>
-              </div>
-            )}
-          </td>
-        );
-      })}
-    </tr>
-  ))}
-</tbody>
-
+                        {mode === "both" && (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-lg font-bold">{hira.kana} / {kata.kana}</span>
+                            <span className="text-xs text-gray-500">{hira.roma}</span>
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       )}
@@ -277,16 +354,14 @@ const handleCellClick = (rowIndex, colIndex) => {
               <div className="text-4xl sm:text-5xl font-bold">
                 {current ? (
                   <>
-                    {mode === "hiragana" && current.kana}
-                    {mode === "katakana" && current.kana}
-                    {mode === "both" && `${current.kana}`}
+                    {current.kana}
                   </>
                 ) : "—"}
               </div>
             </div>
 
             <div className="text-sm text-gray-600">
-              {hasStarted ? `进度：${practiceIndex + 1} / ${practiceList.length}` : "练习尚未开始"}
+              {hasStarted ? `进度：${(practiceIndex || 0) + 1} / ${practiceList ? practiceList.length : 0}` : "练习尚未开始"}
             </div>
           </div>
 
@@ -296,10 +371,21 @@ const handleCellClick = (rowIndex, colIndex) => {
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  if (feedback.startsWith("✅")) {
-                    nextPractice();
-                  } else {
+                  e.preventDefault();
+                  if (e.nativeEvent && e.nativeEvent.isComposing) return;
+
+                  if (!isAnswered) {
+                    // 第一次回车：先判定（只有判对会把 isAnswered 设为 true）
                     checkAnswer();
+                  } else {
+                    // 已经答对过一次：再次回车时再判一次，若正确则跳题，否则更新提示并停在本题
+                    const norm = (s) => (s || "").trim().toLowerCase();
+                    const correct = (current && current.roma ? current.roma.toLowerCase() : "");
+                    if (norm(answer) === correct) {
+                      nextPractice();
+                    } else {
+                      checkAnswer();
+                    }
                   }
                 }
               }}
@@ -315,6 +401,33 @@ const handleCellClick = (rowIndex, colIndex) => {
           </div>
         </div>
       )}
+
+      {/* 继续未完成的练习的自定义弹窗 */}
+      <ConfirmModal
+        isOpen={showContinuePrompt}
+        title="继续上次练习？"
+        message="检测到上次有未完成练习，是否继续本模式下的上次进度？"
+        confirmText="继续"
+        cancelText="重新开始"
+        onConfirm={() => {
+          restoreFromCache();
+          setShowContinuePrompt(false);
+        }}
+        onCancel={() => {
+          resetProgress();
+          setShowContinuePrompt(false);
+          // 重新从头开始
+          const flat = flattenForMode(mode);
+          setPracticeList(flat);
+          setPracticeIndex(0);
+          updateProgress({practiceList: flat, practiceIndex: 0, mode});
+          setAnswer("");
+          setFeedback("");
+          setIsAnswered(false);
+          setHasStarted(true);
+          setViewToPractice();
+        }}
+      />
     </div>
   );
 }
