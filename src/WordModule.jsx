@@ -5,7 +5,6 @@ import ConfirmUpdateModal from './components/ConfirmUpdateModal';
 import ConfirmImportWordModal from './components/ConfirmImportWordModal';
 import Toast from './components/Toast';
 
-
 const STORAGE_KEY = 'jp_vocab_v1';
 const WRONG_KEY = 'jp_vocab_wrong_v1';
 const DAILY_KEY = 'jp_vocab_daily_v1';
@@ -39,8 +38,19 @@ export default function WordModule() {
   const [toast, setToast] = useState(null);
   const [pendingImports, setPendingImports] = useState([]);
   const [currentImportIndex, setCurrentImportIndex] = useState(0);
-const [hasStarted, setHasStarted] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
+  // 新增：表单折叠状态
+  const [isFormCollapsed, setIsFormCollapsed] = useState(false);
+
+  // 监听 tab 切换
+  useEffect(() => {
+    if (activeTab === 'review') {
+      setIsFormCollapsed(true);
+    } else {
+      setIsFormCollapsed(false);
+    }
+  }, [activeTab]);
 
   const showToast = (message, type = "info") => {
     setToast({ message, type });
@@ -183,6 +193,7 @@ const [hasStarted, setHasStarted] = useState(false);
       second: '2-digit',
     });
   }
+
 
   function exportCSV() {
     if (!words || words.length === 0) {
@@ -513,67 +524,125 @@ const nextImport = () => {
   const todayStats = dailyStats[today] || { total: 0, correct: 0 };
   const goal = dailyGoalRef.current || 20;
 
+
   return (
-    <div>
-      {/* 表单区域 */}
-<div className="relative rounded-2xl p-[2px] bg-gradient-to-r from-stone-900 via-gray-900 to-zinc-900 shadow-lg">
-  <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input
-            ref={wordInputRef}
-            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
-            placeholder="日语单词"
-            value={form.word}
-            onChange={(e) => setForm({ ...form, word: e.target.value })}
-            onKeyDown={handleKeyDown}
-          />
-          <input
-            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
-            placeholder="读音"
-            value={form.reading}
-            onChange={(e) => setForm({ ...form, reading: e.target.value })}
-            onKeyDown={handleKeyDown}
-          />
-          <input
-            className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
-            placeholder="释义"
-            value={form.meaning}
-            onChange={(e) => setForm({ ...form, meaning: e.target.value })}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
+    <div className="relative">{/* 表单区域（外层包裹，内容可折叠 + 底部常驻的 Toggle） */}
+      {/* 表单区域：加了折叠动画 */}
+      <div
+        className={`relative rounded-2xl bg-gradient-to-r from-stone-900 via-gray-900 to-zinc-900 shadow-lg 
+          overflow-hidden transition-all duration-1000 ease-in-out
+          ${isFormCollapsed ? 'max-h-0 opacity-0 p-0' : 'max-h-[600px] opacity-100 p-[2px]'}`}
+      >
 
-        <div className="flex flex-wrap gap-3 justify-center mt-4">
-          <button className="text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" 
-            onClick={addWord}>添加</button>
-          <button className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
-            onClick={exportCSV}>导出 CSV</button>  
-          <button className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
-            onClick={() => fileInputRef.current.click()}>导入 CSV</button>
-          <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importCSV(e.target.files[0]); e.target.value = ""; } }} />
-          <button className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
-           onClick={exportBackup}>导出 (JSON)</button>
-          <button className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700" 
-            onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
-          <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importJSON(e.target.files[0]); e.target.value = ""; } }} />
-        </div>
-    {/* 内容 */}
-  </div>
-</div>
-      {/*主块区 单词列表 和 复习 */}
-<div class="backdrop-blur-md bg-white/90 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
-
-      {/* 内部 Tab */}
-      <div className="flex border-b">
-        <button className={`px-4 py-2 font-semibold ${activeTab === 'words' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('words')}>单词列表</button>
-        <button className={`px-4 py-2 font-semibold ${activeTab === 'review' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('review')}>复习</button>
+        {!isFormCollapsed && (
+          <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <input
+                ref={wordInputRef}
+                className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
+                placeholder="日语单词"
+                value={form.word}
+                onChange={(e) => setForm({ ...form, word: e.target.value })}
+                onKeyDown={handleKeyDown}
+              />
+              <input
+                className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
+                placeholder="读音"
+                value={form.reading}
+                onChange={(e) => setForm({ ...form, reading: e.target.value })}
+                onKeyDown={handleKeyDown}
+              />
+              <input
+                className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
+                placeholder="释义"
+                value={form.meaning}
+                onChange={(e) => setForm({ ...form, meaning: e.target.value })}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+            <div className="flex flex-wrap gap-3 justify-center mt-4">
+              <button className="text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800 
+                font-medium rounded-lg text-xs px-5 py-2.5 text-center me-2 mb-2" 
+              onClick={addWord}>添加</button>
+              <button className="text-white border border-purple-300 bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 
+                font-medium rounded-lg text-xs px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
+              onClick={exportCSV}>导出 CSV</button>  
+              <button className="text-white border border-pink-300 bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 
+                font-medium rounded-lg text-xs px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
+              onClick={() => fileInputRef.current.click()}>导入 CSV</button>
+              <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importCSV(e.target.files[0]); e.target.value = ""; } }} />
+              
+              <button 
+                 className="font-medium rounded-lg text-xs px-5 py-2.5 text-center me-2 mb-2
+                           bg-gray-800 text-white/80 
+                           hover:text-white hover:bg-gray-700
+                           border border-gray-600
+                           outline outline-1 outline-gray-700 outline-offset-1
+                           transition-all duration-200
+                           shadow-sm hover:shadow-md"
+               onClick={exportBackup}>导出 (JSON)</button>
+              <button 
+                className="font-medium rounded-lg text-xs px-5 py-2.5 text-center me-2 mb-2
+                           bg-gray-800 text-white/80 
+                           hover:text-white hover:bg-gray-700
+                           border border-gray-600
+                           outline outline-1 outline-gray-700 outline-offset-1
+                           transition-all duration-200
+                           shadow-sm hover:shadow-md"
+              onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
+              <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importJSON(e.target.files[0]); e.target.value = ""; } }} />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setIsFormCollapsed(v => !v)}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm bg-gray-800 text-white/90 hover:bg-gray-700 shadow"
+                aria-controls="word-form-panel"
+                aria-expanded={!isFormCollapsed}
+                title={isFormCollapsed ? '展开单词面板' : '收起'}
+              >
+                <span>{isFormCollapsed ? '展开单词面板' : '收起'}</span>
+                {/* 小箭头图标 */}
+                <svg
+                  className={`w-4 h-4 transition-transform ${isFormCollapsed ? '' : 'rotate-180'}`}
+                  viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                ><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 列表和复习 */}
-      {activeTab === 'words' && (
-        <div className="rounded p-4">
+      {isFormCollapsed && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsFormCollapsed(v => !v)}
+              className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm bg-gray-800 text-white/90 hover:bg-gray-700 shadow"
+              aria-controls="word-form-panel"
+              aria-expanded={!isFormCollapsed}
+              title='展开单词面板'
+            >
+              <span>展开单词面板</span>
+              <svg
+                className="w-4 h-4 transition-transform rotate-180"
+                viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+              ><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+       )}
+
+      {/* 主体区 */}
+      <div className="backdrop-blur-md bg-white/70 border border-gray-200 rounded-xl px-2 sm:px-6 py-2 mt-4 shadow-sm">
+        <div className="flex border-b">
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'words' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('words')}>单词列表</button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'review' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('review')}>复习</button>
+        </div>
+        {/* 列表和复习 */}
+        {activeTab === 'words' && (
+        <div className="rounded p-2 sm:p-4">
           {words.length === 0 ? (
-            <div className="text-center text-gray-400 py-6">
+            <div className="text-center text-gray-800 py-6">
               📥 请导入或者输入添加单词
             </div>
           ) : (
@@ -598,7 +667,7 @@ const nextImport = () => {
       )}
 
       {activeTab === 'review' && (
-        <div className="rounded p-4">
+        <div className="rounded p-2 sm:p-4">
           <div className="text-sm mb-4 text-gray-600">
             {reviewOnlyWrong ? `❌ 复习范围：错题本（共 ${Object.keys(wrongBook).length} 个）` : `📚 复习范围：全部单词（共 ${words.length} 个）`}
           </div>
@@ -615,116 +684,116 @@ const nextImport = () => {
             </button>
           </div>
 
-<div
-  className={`mt-6 p-6 rounded-2xl shadow-lg border transition-all duration-300 backdrop-blur-md bg-white/10 
-    ${isCorrect === 'exact'
-      ? 'border-green-500'
-      : isCorrect === 'similar'
-      ? 'border-yellow-500'
-      : isCorrect === 'wrong'
-      ? 'border-red-500'
-      : 'border-gray-500'}`}
->
-  {current && (
-    <div className="mb-3 text-sm text-gray-500">
-      进度：{reviewIndex + 1} / {reviewList.length}
-    </div>
-  )}
+          <div
+            className={`mt-6 p-3 sm:p-6 rounded-2xl shadow-lg border transition-all duration-300 backdrop-blur-md bg-white/10 
+              ${isCorrect === 'exact'
+                ? 'border-green-500'
+                : isCorrect === 'similar'
+                ? 'border-yellow-500'
+                : isCorrect === 'wrong'
+                ? 'border-red-500'
+                : 'border-gray-500'}`}
+          >
+            {current && (
+              <div className="mb-3 text-sm text-gray-500">
+                进度：{reviewIndex + 1} / {reviewList.length}
+              </div>
+            )}
+            {hasStarted && reviewIndex >= reviewList.length && (
+              <div className="text-center text-lg text-green-400 font-semibold">
+                🎉 已经完成本轮复习！
+              </div>
+            )}
 
-  {hasStarted && reviewIndex >= reviewList.length && (
-    <div className="text-center text-lg text-green-400 font-semibold">
-      🎉 已经完成本轮复习！
-    </div>
-  )}
-
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-    <div className="text-2xl font-bold mb-3">{current ? current.word : '点击开始复习'}</div>
-    <div className="text-lg text-blue-600 mb-4">{current ? current.meaning : ''}</div>
-  </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+              <div className="text-2xl font-bold mb-3">{current ? current.word : '点击开始复习'}</div>
+              <div className="text-lg text-blue-600 mb-4">{current ? current.meaning : ''}</div>
+            </div>
 
 
-  <input
-    className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400"
-    placeholder="输入读音并回车或点击检查"
-    value={answer}
-    onChange={(e) => setAnswer(e.target.value)}
-    onKeyDown={(e) => {
-      if (e.key === 'Enter') {
-        checkAnswer();
-        if (isCorrect === 'exact') {
-          nextReview();
-        }
-      }
-    }}
-  />
+            <input
+              className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-400"
+              placeholder="输入读音并回车或点击检查"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  checkAnswer();
+                  if (isCorrect === 'exact') {
+                    nextReview();
+                  }
+                }
+              }}
+            />
 
-  <div className="flex gap-4">
-    <button
-      className="flex-1 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl transition"
-      onClick={checkAnswer}
-    >
-      检查
-    </button>
-    <button
-      className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-xl transition"
-      onClick={nextReview}
-    >
-      下一题
-    </button>
+            <div className="flex gap-4">
+              <button
+                className="flex-1 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl transition"
+                onClick={checkAnswer}
+              >
+                检查
+              </button>
+              <button
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-xl transition"
+                onClick={nextReview}
+              >
+                下一题
+              </button>
 
-  </div>
+            </div>
 
-  {hasStarted && reviewIndex < reviewList.length && current && isCorrect && (
-    <div
-      className={`mt-6 ${
-        isCorrect === 'exact'
-          ? 'text-green-400'
-          : isCorrect === 'similar'
-          ? 'text-yellow-400'
-          : 'text-red-400'
-      }`}
-    >
-      {isCorrect === 'exact' && '✅ 正确'}
-      {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
-      {isCorrect === 'wrong' && '❌ 错误，请再试'}
+            {hasStarted && reviewIndex < reviewList.length && current && isCorrect && (
+              <div
+                className={`mt-6 ${
+                  isCorrect === 'exact'
+                    ? 'text-green-400'
+                    : isCorrect === 'similar'
+                    ? 'text-yellow-400'
+                    : 'text-red-400'
+                }`}
+              >
+                {isCorrect === 'exact' && '✅ 正确'}
+                {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
+                {isCorrect === 'wrong' && '❌ 错误，请再试'}
 
-      <div className="mt-3 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
-        <strong className="block text-gray-200 mb-1">正确答案:</strong>
-        <div className="text-blue-300">
-          <strong>读音:</strong> {current.reading}
-        </div>
-        <div className="text-gray-300">
-          <strong>释义:</strong> {current.meaning}
-        </div>
-      </div>
-    </div>
-  )}
-</div>
+                <div className="mt-3 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                  <strong className="block text-gray-200 mb-1">正确答案:</strong>
+                  <div className="text-blue-300">
+                    <strong>读音:</strong> {current.reading}
+                  </div>
+                  <div className="text-gray-300">
+                    <strong>释义:</strong> {current.meaning}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
         </div>
       )}
-
-</div>
+      
       {isEditing && <EditWordModal wordData={editWordData} onClose={closeEditWordModal} onSave={saveWordEdit} />}
       {isModalOpen && <ConfirmUpdateModal currentWord={wordToUpdate.currentWord} updatedWord={wordToUpdate.updatedWord} onConfirm={handleConfirmUpdate} onCancel={handleCancelUpdate} />}
       {toast && (
       <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast(null)}
-      />
-    )}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
-    {pendingImports.length > 0 && (
-      <ConfirmImportWordModal
-        word={pendingImports[currentImportIndex]}
-        onCover={handleCover}
-        onSkip={handleSkip}
-        onCoverAll={handleCoverAll}
-        onSkipAll={handleSkipAll}
-      />
-    )}
+      {pendingImports.length > 0 && (
+        <ConfirmImportWordModal
+          word={pendingImports[currentImportIndex]}
+          onCover={handleCover}
+          onSkip={handleSkip}
+          onCoverAll={handleCoverAll}
+          onSkipAll={handleSkipAll}
+        />
+      )}
 
     </div>
+</div>
   );
 }
+

@@ -265,13 +265,15 @@ const nextImport = () => {
               添加笔记
             </button>
             <button
-              className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+              className="text-white border border-purple-300 bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium
+               rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
               onClick={exportCSV}
             >
               导出 CSV
             </button>
             <button
-              className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+              className="text-white border border-pink-300 bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 
+              font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700" 
               onClick={() => fileInputCSVRef.current.click()}
             >
               导入 CSV
@@ -477,11 +479,14 @@ const nextImport = () => {
 
       {viewingNote && (
       <div className="fixed inset-0 bg-gray-500/30 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] relative">
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-6 max-w-4xl w-[95%] sm:w-full max-h-[90vh] relative">
             {/* 关闭按钮 */}
             <button
               onClick={() => setViewingNote(null)}
-              className="absolute -top-4 -right-4 bg-white hover:bg-blue-50 text-blue-500 hover:text-blue-600 rounded-full w-10 h-10 flex items-center justify-center shadow-md border border-gray-200 transition text-2xl leading-none"
+               className="absolute top-2 right-2 sm:-top-4 sm:-right-4 bg-white hover:bg-blue-50 
+                 text-blue-500 hover:text-blue-600 rounded-full 
+                 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center 
+                 shadow-md border border-gray-200 transition text-xl sm:text-2xl leading-none"
               aria-label="关闭"
             >
               ✖
