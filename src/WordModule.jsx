@@ -586,11 +586,14 @@ const nextImport = () => {
                 value={form.word}
                 onChange={(e) => setForm({ ...form, word: e.target.value })}
                 onKeyDown={handleKeyDown}
-               onBlur={() => {
+                onBlur={() => {
                   const keyword = form.word.trim();
                   if (keyword) {
                     const matches = words.filter(w => w.word === keyword);
                     setExistingMatches(matches);
+                    if (wordInputRef.current) {
+                      wordInputRef.current.focus();
+                    }
                   } else {
                     setExistingMatches([]);
                   }
