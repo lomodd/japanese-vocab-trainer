@@ -45,6 +45,8 @@ export default function WordModule() {
   // 新增：表单折叠状态
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [showContinuePrompt, setShowContinuePrompt] = useState(false);
+  const [existingMatches, setExistingMatches] = useState([]);
+
 
   // 监听 tab 切换
   useEffect(() => {
@@ -584,6 +586,15 @@ const nextImport = () => {
                 value={form.word}
                 onChange={(e) => setForm({ ...form, word: e.target.value })}
                 onKeyDown={handleKeyDown}
+               onBlur={() => {
+                  const keyword = form.word.trim();
+                  if (keyword) {
+                    const matches = words.filter(w => w.word === keyword);
+                    setExistingMatches(matches);
+                  } else {
+                    setExistingMatches([]);
+                  }
+                }}
               />
               <input
                 className="w-full border rounded-lg p-2 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none text-white placeholder-gray-4003"
@@ -600,6 +611,24 @@ const nextImport = () => {
                 onKeyDown={handleKeyDown}
               />
             </div>
+            {existingMatches.length > 0 && (
+              <div className="relative p-3 rounded-2xl bg-gray-900 text-white shadow-lg   border border-gray-800  
+                   before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-pink-500 before:to-purple-500 
+                before:blur-xl before:opacity-40 before:-z-10">
+              <div class="font-medium text-yellow-300 mb-1">⚠️已存在：</div>
+              <ul className="space-y-1">
+                {existingMatches.map(m => (
+                  <li key={m.id} className="flex flex-wrap gap-2">
+                    <span className="font-semibold text-gray-200">{m.word}</span>
+                    <span className="text-red-500">[{m.reading}]</span>
+                    <span className="text-gray-200">{m.meaning}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            )}
+
+
             <div className="flex flex-wrap gap-3 justify-center mt-4">
               <button className="text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800 
                 font-medium rounded-lg text-xs px-5 py-2.5 text-center me-2 mb-2" 
@@ -811,8 +840,9 @@ const nextImport = () => {
 
         </div>
       )}
-      
-      {isEditing && <EditWordModal wordData={editWordData} onClose={closeEditWordModal} onSave={saveWordEdit} />}
+    </div>
+
+    {isEditing && <EditWordModal wordData={editWordData} onClose={closeEditWordModal} onSave={saveWordEdit} />}
       {isModalOpen && <ConfirmUpdateModal currentWord={wordToUpdate.currentWord} updatedWord={wordToUpdate.updatedWord} onConfirm={handleConfirmUpdate} onCancel={handleCancelUpdate} />}
       {toast && (
       <Toast
@@ -848,7 +878,6 @@ const nextImport = () => {
           beginNewReview(pool, reviewOnlyWrong);
         }}
       />
-    </div>
 </div>
   );
 }
