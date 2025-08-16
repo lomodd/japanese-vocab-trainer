@@ -24,6 +24,8 @@ const [currentImportIndex, setCurrentImportIndex] = useState(0);
 const [applyToAll, setApplyToAll] = useState(null); // 'coverAll' | 'skipAll'
 const [viewingNote, setViewingNote] = useState(null);
 const [noteToDelete, setNoteToDelete] = useState(null);
+const [isFormCollapsed, setIsFormCollapsed] = useState(false);
+
 
 
 
@@ -235,7 +237,13 @@ const nextImport = () => {
   return (
     <div>
       {/* 表单 */}
-      <div className="bg-white/5 backdrop-blur-md border border-white/10 shadow-lg rounded-2xl p-6">
+<div
+  className={`relative rounded-2xl bg-gradient-to-r from-stone-900 via-gray-900 to-zinc-900 shadow-lg 
+    overflow-hidden transition-all duration-1000 ease-in-out
+    ${isFormCollapsed ? 'max-h-0 opacity-0 p-0' : 'max-h-[600px] opacity-100 p-[2px]'}`}
+>
+  {!isFormCollapsed && (
+    <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm relative">
         <div className="">
           <input
             className="w-full rounded-xl p-3 mb-4 bg-black border border-gray-600 focus:border-blue-500 focus:outline-none text-white placeholder-gray-4003"
@@ -316,7 +324,46 @@ const nextImport = () => {
             />
           </div>
         </div>
+        <div className="flex justify-end">
+          <button
+            onClick={() => setIsFormCollapsed(v => !v)}
+            className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm bg-gray-800 text-white/90 hover:bg-gray-700 shadow"
+            aria-controls="grammar-form-panel"
+            aria-expanded={!isFormCollapsed}
+            title={isFormCollapsed ? '展开语法面板' : '收起'}
+          >
+            <span>{isFormCollapsed ? '展开语法面板' : '收起'}</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${isFormCollapsed ? '' : 'rotate-180'}`}
+              viewBox="0 0 20 20" fill="currentColor"
+            >
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
       </div>
+  )}
+</div>
+{isFormCollapsed && (
+  <div className="flex justify-end">
+    <button
+      onClick={() => setIsFormCollapsed(v => !v)}
+      className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm bg-gray-800 text-white/90 hover:bg-gray-700 shadow"
+      aria-controls="grammar-form-panel"
+      aria-expanded={!isFormCollapsed}
+      title="展开语法面板"
+    >
+      <span>展开语法面板</span>
+      <svg
+        className="w-4 h-4 transition-transform rotate-180"
+        viewBox="0 0 20 20" fill="currentColor"
+      >
+        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+      </svg>
+    </button>
+  </div>
+)}
 
       {/*主块区 语法列表 */}
 <div class="backdrop-blur-md bg-white/90 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">

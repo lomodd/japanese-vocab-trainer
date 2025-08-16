@@ -4,10 +4,12 @@ import EditWordModal from './components/EditWordModal';
 import ConfirmUpdateModal from './components/ConfirmUpdateModal';
 import ConfirmImportWordModal from './components/ConfirmImportWordModal';
 import Toast from './components/Toast';
+import ConfirmModal from "./components/ConfirmModal";
 
 const STORAGE_KEY = 'jp_vocab_v1';
 const WRONG_KEY = 'jp_vocab_wrong_v1';
 const DAILY_KEY = 'jp_vocab_daily_v1';
+const REVIEW_PROGRESS_KEY = 'word_review_progress';
 
 function uid() {
   return Math.random().toString(36).slice(2, 9);
@@ -42,6 +44,7 @@ export default function WordModule() {
 
   // 新增：表单折叠状态
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
+  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
 
   // 监听 tab 切换
   useEffect(() => {
@@ -413,14 +416,8 @@ const nextImport = () => {
 };
 
 
-  // 当用户开始复习时调用
-  function startReview(onlyWrong = false) {
-    setHasStarted(true);
-    const pool = onlyWrong ? Object.values(wrongBook) : words;
-    if (!pool || pool.length === 0) {
-      showToast(onlyWrong ? '错题本为空' : '单词表为空','warning');
-      return;
-    }
+  // === 新增：复习缓存逻辑 ===
+  function beginNewReview(pool, onlyWrong) {
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     setReviewList(shuffled);
     setReviewIndex(0);
@@ -428,12 +425,49 @@ const nextImport = () => {
     setReviewOnlyWrong(onlyWrong);
     setAnswer('');
     setIsCorrect(null);
+    setHasStarted(true);
+
+    localStorage.setItem(REVIEW_PROGRESS_KEY, JSON.stringify({
+      reviewList: shuffled,
+      reviewIndex: 0,
+      onlyWrong
+    }));
+  }
+
+  function restoreFromCache() {
+    const saved = JSON.parse(localStorage.getItem(REVIEW_PROGRESS_KEY) || '{}');
+    if (!saved.reviewList || saved.reviewList.length === 0) return;
+
+    setReviewList(saved.reviewList);
+    setReviewIndex(saved.reviewIndex);
+    setCurrent(saved.reviewList[saved.reviewIndex]);
+    setHasStarted(true);
+    setAnswer('');
+    setIsCorrect(null);
+  }
+
+  function startReview(onlyWrong = false) {
+    setHasStarted(true);
+    const pool = onlyWrong ? Object.values(wrongBook) : words;
+    if (!pool || pool.length === 0) {
+      showToast(onlyWrong ? '错题本为空' : '单词表为空', 'warning');
+      return;
+    }
+
+    const saved = JSON.parse(localStorage.getItem(REVIEW_PROGRESS_KEY) || '{}');
+    if (saved.reviewList && saved.reviewList.length > 0 && saved.reviewIndex < saved.reviewList.length) {
+      setShowContinuePrompt(true);
+      return;
+    }
+
+    beginNewReview(pool, onlyWrong);
   }
 
   function nextReview() {
     if (reviewIndex + 1 >= reviewList.length) {
       setCurrent(null);
       showToast('🎉 恭喜，已经完成本轮复习！', 'success');
+      localStorage.removeItem(REVIEW_PROGRESS_KEY);
       return;
     }
     const nextIdx = reviewIndex + 1;
@@ -441,6 +475,12 @@ const nextImport = () => {
     setCurrent(reviewList[nextIdx]);
     setAnswer('');
     setIsCorrect(null);
+
+    localStorage.setItem(REVIEW_PROGRESS_KEY, JSON.stringify({
+      reviewList,
+      reviewIndex: nextIdx,
+      onlyWrong: reviewOnlyWrong
+    }));
   }
 
   const checkAnswer = () => {
@@ -791,7 +831,23 @@ const nextImport = () => {
           onSkipAll={handleSkipAll}
         />
       )}
-
+      <ConfirmModal
+        isOpen={showContinuePrompt}
+        title="继续上次复习？"
+        message="检测到上次有未完成的复习，是否继续？"
+        confirmText="继续"
+        cancelText="重新开始"
+        onConfirm={() => {
+          restoreFromCache();
+          setShowContinuePrompt(false);
+        }}
+        onCancel={() => {
+          localStorage.removeItem(REVIEW_PROGRESS_KEY);
+          setShowContinuePrompt(false);
+          const pool = reviewOnlyWrong ? Object.values(wrongBook) : words;
+          beginNewReview(pool, reviewOnlyWrong);
+        }}
+      />
     </div>
 </div>
   );
