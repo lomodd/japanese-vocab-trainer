@@ -740,24 +740,26 @@ const nextImport = () => {
 
       {activeTab === 'review' && (
         <div className="rounded p-2 sm:p-4">
-          <div className="text-sm mb-4 text-gray-600">
-            {reviewOnlyWrong ? `❌ 复习范围：错题本（共 ${Object.keys(wrongBook).length} 个）` : `📚 复习范围：全部单词（共 ${words.length} 个）`}
-          </div>
           <div className="flex gap-4 mb-4">
-            <button className="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900" 
+            <button className="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm 
+              px-3 py-2.5 sm:px-5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900" 
               onClick={() => startReview(false)}>复习全部</button>
-            <button className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" 
+            <button className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg 
+              text-sm px-3 py-2.5 sm:px-5 text-center me-2 mb-2" 
               onClick={() => startReview(true)}>复习错题本</button>
-            <button className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800"
+            <button className="relative inline-flex items-center justify-center 
+              p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800"
               onClick={exportWrongBookCSV}>
-              <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+              <span className="relative px-3 sm:px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
               导出错题本
               </span>
             </button>
           </div>
-
+          <div className="text-sm mb-4 text-gray-600">
+            {reviewOnlyWrong ? `❌ 复习范围：错题本（共 ${Object.keys(wrongBook).length} 个）` : `📚 复习范围：全部单词（共 ${words.length} 个）`}
+          </div>
           <div
-            className={`mt-6 p-3 sm:p-6 rounded-2xl shadow-lg border transition-all duration-300 backdrop-blur-md bg-white/10 
+            className={`mt-6 p-3 sm:p-6 rounded-2xl shadow-lg border transition-all duration-300 backdrop-blur-md bg-gray-200/10 
               ${isCorrect === 'exact'
                 ? 'border-green-500'
                 : isCorrect === 'similar'
@@ -766,19 +768,41 @@ const nextImport = () => {
                 ? 'border-red-500'
                 : 'border-gray-500'}`}
           >
-            {current && (
-              <div className="mb-3 text-sm text-gray-500">
-                进度：{reviewIndex + 1} / {reviewList.length}
-              </div>
-            )}
             {hasStarted && reviewIndex >= reviewList.length && (
               <div className="text-center text-lg text-green-400 font-semibold">
                 🎉 已经完成本轮复习！
               </div>
             )}
+            {current && (
+              <div
+               className="text-center text-sm text-gray-500">
+                进度：{reviewIndex + 1} / {reviewList.length}
+              </div>
+            )}
+
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-              <div className="text-2xl font-bold mb-3">{current ? current.word : '点击开始复习'}</div>
+              <div className="text-2xl font-bold mb-3">{current ? current.word : '点击开始复习'}
+              {hasStarted && reviewIndex < reviewList.length && current && isCorrect && (
+                <span
+                  className={`mx-2 text-sm ${
+                    isCorrect === 'exact'
+                      ? 'text-green-500'
+                      : isCorrect === 'similar'
+                      ? 'text-yellow-400'
+                      : 'text-red-400'
+                  }`}
+                >
+                  {isCorrect === 'exact' && (
+                    <span>✅ 正确
+                      <span className='text-sm font-medium text-gray-400'> 回车下一题 </span>
+                    </span>
+                  )}
+                  {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
+                  {isCorrect === 'wrong' && '❌ 错误，请再试'}
+                </span>)
+              }
+          </div>
               <div className="text-lg text-blue-600 mb-4">{current ? current.meaning : ''}</div>
             </div>
 
@@ -824,11 +848,10 @@ const nextImport = () => {
                     : 'text-red-400'
                 }`}
               >
-                {isCorrect === 'exact' && '✅ 正确'}
-                {isCorrect === 'similar' && '⚠ 接近（计入错题）'}
-                {isCorrect === 'wrong' && '❌ 错误，请再试'}
 
-                <div className="mt-3 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                <div className="relative p-3 rounded-2xl bg-gray-900 text-white shadow-lg border border-gray-800  
+                   before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-yellow-500 before:to-green-500 
+                before:blur-xl before:opacity-40 before:-z-10">
                   <strong className="block text-gray-200 mb-1">正确答案:</strong>
                   <div className="text-blue-300">
                     <strong>读音:</strong> {current.reading}
