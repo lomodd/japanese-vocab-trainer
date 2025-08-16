@@ -366,7 +366,7 @@ const nextImport = () => {
 )}
 
       {/*主块区 语法列表 */}
-<div class="backdrop-blur-md bg-white/90 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
+<div className="backdrop-blur-md bg-white/90 border border-gray-200 rounded-xl px-6 py-2 mt-4 shadow-sm">
 
       {/* 列表：每项默认限高，点击展开 */}
       <div className="rounded p-4">
