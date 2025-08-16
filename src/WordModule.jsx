@@ -591,7 +591,7 @@ const nextImport = () => {
                   if (keyword) {
                     const matches = words.filter(w => w.word === keyword);
                     setExistingMatches(matches);
-                    if (wordInputRef.current) {
+                    if (matches.length && wordInputRef.current) {
                       wordInputRef.current.focus();
                     }
                   } else {
