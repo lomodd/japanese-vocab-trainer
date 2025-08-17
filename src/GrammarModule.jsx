@@ -239,7 +239,7 @@ const nextImport = () => {
       {/* 表单 */}
 <div
   className={`relative rounded-2xl bg-gradient-to-r from-stone-900 via-gray-900 to-zinc-900 shadow-lg 
-    overflow-hidden transition-all duration-1000 ease-in-out
+    overflow-auto transition-all duration-1000 ease-in-out
     ${isFormCollapsed ? 'max-h-0 opacity-0 p-0' : 'max-h-[600px] opacity-100 p-[2px]'}`}
 >
   {!isFormCollapsed && (

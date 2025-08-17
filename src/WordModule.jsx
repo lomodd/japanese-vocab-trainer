@@ -803,7 +803,7 @@ const nextImport = () => {
                 </span>)
               }
           </div>
-              <div className="text-lg text-blue-600 mb-4">{current ? current.meaning : ''}</div>
+              <div className="text-sm text-blue-600 mb-4 px-2">{current ? current.meaning : ''}</div>
             </div>
 
 
