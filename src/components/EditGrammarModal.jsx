@@ -9,7 +9,7 @@ export default function EditGrammarModal({ note, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow p-6 w-[90%] sm:w-2/3 lg:w-1/3">
+      <div className="bg-white rounded-xl shadow p-6 w-[90%] sm:w-3/5">
         <h2 className="text-lg font-bold mb-4">编辑语法笔记</h2>
         <input
           className="w-full border rounded-lg p-2 mb-3"

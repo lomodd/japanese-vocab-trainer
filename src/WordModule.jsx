@@ -46,6 +46,14 @@ export default function WordModule() {
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [showContinuePrompt, setShowContinuePrompt] = useState(false);
   const [existingMatches, setExistingMatches] = useState([]);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearOptions, setClearOptions] = useState({
+    words: false,
+    wrongBook: false,
+    dailyStats: false,
+    reviewCache: false,
+  });
+
 
 
   // 监听 tab 切换
@@ -566,6 +574,37 @@ const nextImport = () => {
   const todayStats = dailyStats[today] || { total: 0, correct: 0 };
   const goal = dailyGoalRef.current || 20;
 
+  //not in use
+  function doClearAllData() {
+    setWords([]);
+    setWrongBook({});
+    setDailyStats({});
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(WRONG_KEY);
+    localStorage.removeItem(DAILY_KEY);
+    localStorage.removeItem(REVIEW_PROGRESS_KEY);
+    showToast("所有数据已清除", "success");
+  }
+
+  function doClearSelectedData() {
+    if (clearOptions.words) {
+      setWords([]);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    if (clearOptions.wrongBook) {
+      setWrongBook({});
+      localStorage.removeItem(WRONG_KEY);
+    }
+    if (clearOptions.dailyStats) {
+      setDailyStats({});
+      localStorage.removeItem(DAILY_KEY);
+    }
+    if (clearOptions.reviewCache) {
+      localStorage.removeItem(REVIEW_PROGRESS_KEY);
+    }
+    showToast("已清除所选数据", "success");
+  }
+
 
   return (
     <div className="relative">{/* 表单区域（外层包裹，内容可折叠 + 底部常驻的 Toggle） */}
@@ -663,6 +702,26 @@ const nextImport = () => {
                            shadow-sm hover:shadow-md"
               onClick={() => backupInputRef.current.click()}>导入 (JSON)</button>
               <input type="file" accept=".json" ref={backupInputRef} style={{ display: 'none' }} onChange={(e) => { if (e.target.files.length > 0) { importJSON(e.target.files[0]); e.target.value = ""; } }} />
+              <button 
+                className="font-medium rounded-lg text-xs px-5 py-2.5 text-center me-2 mb-2
+                           bg-gray-800 text-white 
+                           hover:text-gray-800 
+                           hover:bg-red-400
+                           border border-red-400
+                           shadow-sm hover:shadow-md"
+                onClick={() => {
+                  setShowClearConfirm(true);
+                  setClearOptions({
+                    words: false,
+                    wrongBook: false,
+                    dailyStats: false,
+                    reviewCache: false,
+                  });
+                }}
+              >
+                清除数据
+              </button>
+
             </div>
             <div className="flex justify-end">
               <button
@@ -707,8 +766,8 @@ const nextImport = () => {
       {/* 主体区 */}
       <div className="backdrop-blur-md bg-white/70 border border-gray-200 rounded-xl px-2 sm:px-6 py-2 mt-4 shadow-sm">
         <div className="flex border-b">
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'words' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('words')}>单词列表</button>
-          <button className={`px-4 py-2 font-semibold ${activeTab === 'review' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-sm text-gray-600'}`} onClick={() => switchTab('review')}>复习</button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'words' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-md text-gray-600'}`} onClick={() => switchTab('words')}>单词列表</button>
+          <button className={`px-4 py-2 font-semibold ${activeTab === 'review' ? 'text-md border-b-2 border-blue-600 text-blue-600' : 'text-md text-gray-600'}`} onClick={() => switchTab('review')}>复习</button>
         </div>
         {/* 列表和复习 */}
         {activeTab === 'words' && (
@@ -740,7 +799,7 @@ const nextImport = () => {
 
       {activeTab === 'review' && (
         <div className="rounded p-2 sm:p-4">
-          <div className="flex gap-4 mb-4">
+          <div className="flex justify-center gap-4 mb-4">
             <button className="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm 
               px-3 py-2.5 sm:px-5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900" 
               onClick={() => startReview(false)}>复习全部</button>
@@ -904,6 +963,53 @@ const nextImport = () => {
           beginNewReview(pool, reviewOnlyWrong);
         }}
       />
+      <ConfirmModal
+        isOpen={showClearConfirm}
+        title="🗑 选择要清除的数据"
+        confirmText="确定清除"
+        cancelText="取消"
+        onConfirm={() => {
+          doClearSelectedData();
+          setShowClearConfirm(false);
+        }}
+        onCancel={() => setShowClearConfirm(false)}
+      >
+        <div className="space-y-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={clearOptions.words}
+              onChange={(e) => setClearOptions({...clearOptions, words: e.target.checked})}
+            />
+            清除单词列表
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={clearOptions.wrongBook}
+              onChange={(e) => setClearOptions({...clearOptions, wrongBook: e.target.checked})}
+            />
+            清除错题本
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={clearOptions.dailyStats}
+              onChange={(e) => setClearOptions({...clearOptions, dailyStats: e.target.checked})}
+            />
+            清除每日统计
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={clearOptions.reviewCache}
+              onChange={(e) => setClearOptions({...clearOptions, reviewCache: e.target.checked})}
+            />
+            清除复习缓存
+          </label>
+        </div>
+      </ConfirmModal>
+
 </div>
   );
 }
