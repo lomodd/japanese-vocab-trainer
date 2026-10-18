@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Development Interview Notes</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, sans-serif;
+        background: #18181b;
+        color: #f4f4f5;
+      }
+
+      body {
+        box-sizing: border-box;
+        margin: 0 auto;
+        max-width: 900px;
+        padding: 32px 20px;
+      }
+
+      a {
+        color: #93c5fd;
+      }
+
+      header {
+        margin-bottom: 28px;
+      }
+
+      h1,
+      h2 {
+        color: #fff;
+      }
+
+      .card {
+        background: #27272a;
+        border: 1px solid #3f3f46;
+        border-radius: 12px;
+        margin: 20px 0;
+        padding: 20px;
+      }
+
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 340px;
+        resize: vertical;
+        border: 1px solid #52525b;
+        border-radius: 8px;
+        background: #09090b;
+        color: #f4f4f5;
+        font: inherit;
+        line-height: 1.6;
+        padding: 12px;
+      }
+
+      .hint,
+      #save-status {
+        color: #a1a1aa;
+        font-size: 0.9rem;
+      }
+
+      li {
+        margin: 8px 0;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          padding: 20px 14px;
+        }
+
+        .card {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="./">← Japanese Vocab Trainer</a>
+      <h1>Development Interview Notes</h1>
+      <p>Capture concepts, examples, and questions to revisit.</p>
+    </header>
+
+    <main>
+      <section class="card" aria-labelledby="notes-heading">
+        <h2 id="notes-heading">My notes</h2>
+        <label class="hint" for="notes">Notes save automatically in this browser.</label>
+        <textarea
+          id="notes"
+          placeholder="Topic:
+
+How I would explain it:
+
+Example:
+
+Trade-offs / follow-up questions:"
+        ></textarea>
+        <p id="save-status" role="status" aria-live="polite">Notes are stored on this device in this browser.</p>
+      </section>
+
+      <section class="card" aria-labelledby="prompts-heading">
+        <h2 id="prompts-heading">Useful prompts</h2>
+        <ul>
+          <li>What problem does this concept solve?</li>
+          <li>Can I explain it simply and give a concrete example?</li>
+          <li>What are the trade-offs, edge cases, or alternatives?</li>
+          <li>How would I test or debug a solution involving this?</li>
+        </ul>
+      </section>
+    </main>
+
+    <script>
+      const storageKey = 'development-interview-notes';
+      const notes = document.querySelector('#notes');
+      const saveStatus = document.querySelector('#save-status');
+
+      notes.value = localStorage.getItem(storageKey) || '';
+      notes.addEventListener('input', () => {
+        localStorage.setItem(storageKey, notes.value);
+        saveStatus.textContent = 'Saved in this browser.';
+      });
+    </script>
+  </body>
+</html>
